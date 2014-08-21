@@ -13,6 +13,7 @@ Scene.property = {
 }
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
+Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 
 
@@ -108,4 +109,42 @@ function Scene:DrawGrip( ... )
 			1, cc.c4f(0, 0, 1, 1))
 	end
 	self:AddObj("main", "draw", "grid", draw_node)
+end
+
+function Scene:OnTouchEnded(x, y)
+	if self:IsMove() == 1 then
+		return
+	end
+
+	local logic_x, logic_y = SelfMap:Pixel2LogicSelf(x, y)
+	local chess_id = SelfMap:GetCell(logic_x, logic_y)
+	print(logic_x, logic_y, chess_id)
+
+	if not chess_id then
+		return
+	end
+	if self.pick_chess_id then
+		local pick_chess = self:GetObj("main", "chess", self.pick_chess_id)
+		pick_chess:setColor(cc.c3b(255, 255, 255))
+
+	end
+	if chess_id <= 0 then
+		if self.pick_chess_id then
+			local logic_chess = ChessPool:GetById(self.pick_chess_id)
+			assert(logic_chess)
+			logic_chess:SetPosition(logic_x, logic_y)
+			self.pick_chess_id = nil
+		end
+	else
+		local chess = self:GetObj("main", "chess", chess_id)
+		assert(chess)
+		chess:setColor(cc.c3b(0, 255, 0))
+		self.pick_chess_id = chess_id
+	end
+end
+
+function Scene:OnChessSetPosition(id, logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	local x, y = SelfMap:Logic2PixelSelf(logic_x, logic_y)
+	chess:setPosition(x, y)
 end

@@ -15,6 +15,7 @@ if not SelfMap then
 end
 SelfMap:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 SelfMap:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
+SelfMap:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 
 
 if not EnemyMap then
@@ -45,12 +46,10 @@ end
 
 function Map:IsValid(x, y)
 	if not self.cell_pool[x] then
-		assert(false, "x[%d] is invalid", x)
 		return 0
 	end
 
 	if not self.cell_pool[x][y] then
-		assert(false, "x[%d] y[%d] is invalid", x, y)
 		return 0
 	end
 	return 1
@@ -62,7 +61,7 @@ function Map:RemoveCell(x, y)
 	end
 	local id = self.cell_pool[x][y]
 	self.cell_list[id] = nil
-	self.cell_pool[x][y] = nil
+	self.cell_pool[x][y] = 0
 end
 
 function Map:SetCell(x, y, value)
@@ -115,7 +114,7 @@ end
 
 function Map:Pixel2LogicSelf(pixel_x, pixel_y)
 	local offset_x, offset_y = self:GetMapOffsetPoint()
-	local real_x, real_y = pixel_x - offset_x, pixel_y - real_y
+	local real_x, real_y = pixel_x - offset_x, pixel_y - offset_y
 
 	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
 end
@@ -127,9 +126,9 @@ function Map:Logic2PixelEnemy(logic_x, logic_y)
 	return real_x + offset_x, real_y + offset_y
 end
 
-function Map:Pixel2LogicSelf(pixel_x, pixel_y)
+function Map:Pixel2LogicEnemy(pixel_x, pixel_y)
 	local offset_x, offset_y = self:GetEnemyMapOffsetPoint()
-	local real_x, real_y = pixel_x - offset_x, pixel_y - real_y
+	local real_x, real_y = pixel_x - offset_x, pixel_y - offset_y
 
 	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
 end
@@ -146,4 +145,10 @@ function Map:GetMapOffsetPoint()
 	local offset_y = visible_size.height / 2 - math.floor(Def.MAP_HEIGHT * Def.MAP_CELL_HEIGHT * 0.5) + Def.MAP_OFFSET_Y
 
 	return offset_x, offset_y
+end
+
+function Map:OnChessSetPosition(id, x, y)
+	local position = self:GetCellInfo(id)
+	self:RemoveCell(position.x, position.y)
+	self:SetCell(x, y, id)
 end

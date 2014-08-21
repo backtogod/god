@@ -39,7 +39,7 @@ function GameMgr:Preset()
 end
 
 function GameMgr:_Init()
-	SceneMgr:FirstLoadScene("Sample")
+	SceneMgr:FirstLoadScene("GameScene")
 	return 1
 end
 

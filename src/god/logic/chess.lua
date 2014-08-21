@@ -28,3 +28,10 @@ function Chess:_Init(id, template_id, x, y)
 	self.y = y
 	return 1
 end
+
+function Chess:SetPosition(x, y)
+	local event_name = self:GetClassName() .. ".SET_POSITION"
+	Event:FireEvent(event_name, self:GetId(), x, y)
+	self.x = x
+	self.y = y
+end

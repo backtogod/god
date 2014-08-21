@@ -1,0 +1,9 @@
+--Sample
+AddProjectScript("define.lua")
+
+AddProjectScript("logic/map.lua")
+AddProjectScript("logic/chess.lua")
+
+AddProjectScript("scene/sample_scene.lua")
+AddProjectScript("scene/game_scene.lua")
+

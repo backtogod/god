@@ -13,13 +13,16 @@ Scene.property = {
 }
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
-Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 
+Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
+Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
+Scene:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
 
 function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
+	PickHelper:Uninit()
 end
 
 function Scene:_Init()
@@ -32,6 +35,7 @@ function Scene:_Init()
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 
 	self:DrawGrip()
+	PickHelper:Init(1)
 
 	ChessPool:Add(Chess, 1, 1, 1)
 	ChessPool:Add(Chess, 2, 2, 2)
@@ -118,33 +122,43 @@ function Scene:OnTouchEnded(x, y)
 
 	local logic_x, logic_y = SelfMap:Pixel2LogicSelf(x, y)
 	local chess_id = SelfMap:GetCell(logic_x, logic_y)
-	print(logic_x, logic_y, chess_id)
-
 	if not chess_id then
 		return
 	end
-	if self.pick_chess_id then
-		local pick_chess = self:GetObj("main", "chess", self.pick_chess_id)
-		pick_chess:setColor(cc.c3b(255, 255, 255))
 
-	end
 	if chess_id <= 0 then
-		if self.pick_chess_id then
-			local logic_chess = ChessPool:GetById(self.pick_chess_id)
-			assert(logic_chess)
-			logic_chess:SetPosition(logic_x, logic_y)
-			self.pick_chess_id = nil
-		end
+		PickHelper:DropAll(logic_x, logic_y)
 	else
-		local chess = self:GetObj("main", "chess", chess_id)
-		assert(chess)
-		chess:setColor(cc.c3b(0, 255, 0))
-		self.pick_chess_id = chess_id
+		if PickHelper:CanPick() ~= 1 then
+			PickHelper:CancelAll()
+		end
+		PickHelper:Pick(chess_id, logic_x, logic_y)
 	end
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
 	local chess = self:GetObj("main", "chess", id)
+	local x, y = SelfMap:Logic2PixelSelf(logic_x, logic_y)
+	chess:setPosition(x, y)
+end
+
+function Scene:OnPickChess(id, logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	chess:setColor(cc.c3b(0, 255, 0))
+end
+
+function Scene:OnCancelPickChess(id, logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	chess:setColor(cc.c3b(255, 255, 255))
+end
+
+function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
+	local logic_chess = ChessPool:GetById(id)
+	assert(logic_chess)
+	logic_chess:SetPosition(logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	assert(chess)
+	chess:setColor(cc.c3b(255, 255, 255))
 	local x, y = SelfMap:Logic2PixelSelf(logic_x, logic_y)
 	chess:setPosition(x, y)
 end

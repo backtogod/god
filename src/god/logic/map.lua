@@ -15,7 +15,7 @@ if not SelfMap then
 end
 SelfMap:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 SelfMap:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
-SelfMap:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
+SelfMap:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
 
 
 if not EnemyMap then
@@ -147,7 +147,7 @@ function Map:GetMapOffsetPoint()
 	return offset_x, offset_y
 end
 
-function Map:OnChessSetPosition(id, x, y)
+function Map:OnDropChess(id, x, y)
 	local position = self:GetCellInfo(id)
 	self:RemoveCell(position.x, position.y)
 	self:SetCell(x, y, id)

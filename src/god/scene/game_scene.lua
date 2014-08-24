@@ -13,6 +13,7 @@ Scene.property = {
 }
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
+Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
@@ -43,6 +44,15 @@ function Scene:_Init()
 	ChessPool:Add(Chess, 4, 4, 4)
 	ChessPool:Add(Chess, 5, 5, 5)
 	ChessPool:Add(Chess, 6, 6, 6)
+
+	ChessPool:Add(Chess, 1, 2, 5)
+	ChessPool:Add(Chess, 2, 3, 4)
+	ChessPool:Add(Chess, 3, 4, 3)
+	ChessPool:Add(Chess, 4, 5, 2)
+	ChessPool:Add(Chess, 5, 6, 1)
+	ChessPool:Add(Chess, 6, 1, 6)
+
+	ChessPool:Add(Chess, 1, 3, 5)
 
 	EnemyChessPool:Add(Chess, 1, 1, 1)
 	EnemyChessPool:Add(Chess, 2, 2, 1)
@@ -159,6 +169,4 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	local chess = self:GetObj("main", "chess", id)
 	assert(chess)
 	chess:setColor(cc.c3b(255, 255, 255))
-	local x, y = SelfMap:Logic2PixelSelf(logic_x, logic_y)
-	chess:setPosition(x, y)
 end

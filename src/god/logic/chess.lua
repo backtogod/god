@@ -31,7 +31,7 @@ end
 
 function Chess:SetPosition(x, y)
 	local event_name = self:GetClassName() .. ".SET_POSITION"
-	Event:FireEvent(event_name, self:GetId(), x, y)
+	Event:FireEvent(event_name, self:GetId(), x, y, self.x, self.y)
 	self.x = x
 	self.y = y
 end

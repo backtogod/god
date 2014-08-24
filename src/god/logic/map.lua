@@ -15,7 +15,7 @@ if not SelfMap then
 end
 SelfMap:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 SelfMap:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
-SelfMap:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
+SelfMap:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 
 
 if not EnemyMap then
@@ -34,6 +34,8 @@ function Map:_Init(width, height)
 			self.cell_pool[i][j] = 0
 		end
 	end
+	self.width = width
+	self.height = height
 	self.cell_list = {}
 	return 1
 end
@@ -64,7 +66,7 @@ function Map:RemoveCell(x, y)
 	self.cell_pool[x][y] = 0
 end
 
-function Map:SetCell(x, y, value)
+function Map:SetCell(x, y, value, param)
 	if self:IsValid(x, y) ~= 1 then
 		return
 	end
@@ -75,6 +77,7 @@ function Map:SetCell(x, y, value)
 		end
 		self.cell_list[value].x = x
 		self.cell_list[value].y = y
+		self.cell_list[value].param = param
 	end
 	return 1
 end
@@ -91,7 +94,7 @@ function Map:GetCellInfo(id)
 end
 
 function Map:OnChessAdd(id, template_id, logic_x, logic_y)
-	self:SetCell(logic_x, logic_y, id)
+	self:SetCell(logic_x, logic_y, id, template_id)
 end
 
 function Map:OnChessRemove(id)
@@ -147,8 +150,90 @@ function Map:GetMapOffsetPoint()
 	return offset_x, offset_y
 end
 
-function Map:OnDropChess(id, x, y)
-	local position = self:GetCellInfo(id)
-	self:RemoveCell(position.x, position.y)
-	self:SetCell(x, y, id)
+function Map:OnChessSetPosition(id, x, y, old_x, old_y)
+	local info = self:GetCellInfo(id)
+	self:RemoveCell(info.x, info.y)
+	self:SetCell(x, y, id, info.param)
+
+	local list_horizontal = self:CheckHorizontalCombine(id)
+	if #list_horizontal >= 3 then
+		self:GnerateWall(list_horizontal)
+	end
+
+	local list_vertical = self:CheckVerticalCombine(id)
+	local list_horizontal = self:CheckHorizontalCombine(id)
+	if #list_vertical >= 3 then
+		self:GnerateArmy(list_vertical)
+	end
+end
+
+function Map:CheckVerticalCombine(id)
+	local info = self:GetCellInfo(id)
+	local template_id = info.param
+	local combine_list = {id,}
+	for y = info.y + 1 , self.height do
+		local check_id = self:GetCell(info.x, y)
+		if not check_id or check_id <= 0 then
+			break
+		end
+		local check_info = self:GetCellInfo(check_id)
+		assert(check_info)
+		if check_info.param ~= template_id then
+			break
+		end
+		combine_list[#combine_list + 1] = check_id
+	end
+	for y = info.y - 1 , 0, -1 do
+		local check_id = self:GetCell(info.x, y)
+		if not check_id or check_id <= 0 then
+			break
+		end
+		local check_info = self:GetCellInfo(check_id)
+		assert(check_info)
+		if check_info.param ~= template_id then
+			break
+		end
+		combine_list[#combine_list + 1] = check_id
+	end
+	return combine_list
+end
+
+function Map:CheckHorizontalCombine(id)
+	local info = self:GetCellInfo(id)
+	local template_id = info.param
+	local combine_list = {id,}
+	for x = info.x + 1 , self.width do
+		local check_id = self:GetCell(x, info.y)
+		if not check_id or check_id <= 0 then
+			break
+		end
+		local check_info = self:GetCellInfo(check_id)
+		assert(check_info)
+		if check_info.param ~= template_id then
+			break
+		end
+
+		combine_list[#combine_list + 1] = check_id
+	end
+	for x = info.x - 1 , 0, -1 do
+		local check_id = self:GetCell(x, info.y)
+		if not check_id or check_id <= 0 then
+			break
+		end
+		local check_info = self:GetCellInfo(check_id)
+		assert(check_info)
+		if check_info.param ~= template_id then
+			break
+		end
+		combine_list[#combine_list + 1] = check_id
+	end
+	return combine_list
+end
+
+function Map:GnerateWall(list)
+	-- body
+end
+
+function Map:GnerateArmy(list)
+	-- body
 end

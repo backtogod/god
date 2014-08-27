@@ -24,8 +24,6 @@ end
 EnemyMap:DeclareListenEvent("ENEMY_CHESS.ADD", "OnChessAdd")
 EnemyMap:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnChessRemove")
 
-
-
 function Map:_Init(width, height)
 	self.cell_pool = {}
 	for i = 1, width do
@@ -109,7 +107,7 @@ function Map:Debug()
 end
 
 function Map:Logic2PixelSelf(logic_x, logic_y)
-	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, (logic_y - 0.5) * Def.MAP_CELL_HEIGHT
+	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, (0.5 - logic_y) * Def.MAP_CELL_HEIGHT
 	local offset_x, offset_y = self:GetMapOffsetPoint()
 
 	return real_x + offset_x, real_y + offset_y
@@ -117,35 +115,28 @@ end
 
 function Map:Pixel2LogicSelf(pixel_x, pixel_y)
 	local offset_x, offset_y = self:GetMapOffsetPoint()
-	local real_x, real_y = pixel_x - offset_x, pixel_y - offset_y
+	local real_x, real_y = pixel_x - offset_x, offset_y - pixel_y
 
 	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
+end
+
+function Map:Mirror(x, y)
+	return x, visible_size.height - y
 end
 
 function Map:Logic2PixelEnemy(logic_x, logic_y)
-	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, (logic_y - 0.5) * Def.MAP_CELL_HEIGHT
-	local offset_x, offset_y = self:GetEnemyMapOffsetPoint()
-
-	return real_x + offset_x, real_y + offset_y
+	local pixel_x, pixel_y = self:Logic2PixelSelf(logic_x, logic_y)
+	return self:Mirror(pixel_x, pixel_y)
 end
 
 function Map:Pixel2LogicEnemy(pixel_x, pixel_y)
-	local offset_x, offset_y = self:GetEnemyMapOffsetPoint()
-	local real_x, real_y = pixel_x - offset_x, pixel_y - offset_y
-
-	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
-end
-
-function Map:GetEnemyMapOffsetPoint()
-	local offset_x = visible_size.width / 2 - math.floor(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH * 0.5)
-	local offset_y = visible_size.height / 2 - math.floor(Def.MAP_HEIGHT * Def.MAP_CELL_HEIGHT * 0.5) - Def.MAP_OFFSET_Y
-
-	return offset_x, offset_y
+	local real_x, real_y = self:Mirror(pixel_x, pixel_y)
+	return self:Pixel2LogicSelf(real_x, real_y)
 end
 
 function Map:GetMapOffsetPoint()
-	local offset_x = visible_size.width / 2 - math.floor(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH * 0.5)
-	local offset_y = visible_size.height / 2 - math.floor(Def.MAP_HEIGHT * Def.MAP_CELL_HEIGHT * 0.5) + Def.MAP_OFFSET_Y
+	local offset_x = (visible_size.width - math.floor(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH)) * 0.5
+	local offset_y = (visible_size.height * 0.5 - Def.MAP_OFFSET_Y)
 
 	return offset_x, offset_y
 end
@@ -157,13 +148,13 @@ function Map:OnChessSetPosition(id, x, y, old_x, old_y)
 
 	local list_horizontal = self:CheckHorizontalCombine(id)
 	if #list_horizontal >= 3 then
-		self:GnerateWall(list_horizontal)
+		self:GenerateWall(list_horizontal)
 	end
 
 	local list_vertical = self:CheckVerticalCombine(id)
 	local list_horizontal = self:CheckHorizontalCombine(id)
 	if #list_vertical >= 3 then
-		self:GnerateArmy(list_vertical)
+		self:GenerateArmy(list_vertical)
 	end
 end
 
@@ -230,10 +221,19 @@ function Map:CheckHorizontalCombine(id)
 	return combine_list
 end
 
-function Map:GnerateWall(list)
-	-- body
+function Map:GenerateWall(list)
+	if not list then
+		assert(false)
+		return
+	end
+	for _, id in ipairs(list) do
+		local info = self:GetCellInfo(id)
+		local x = info.x
+		local check_id = self:GetCell(x, self.height)
+
+	end
 end
 
-function Map:GnerateArmy(list)
+function Map:GenerateArmy(list)
 	-- body
 end

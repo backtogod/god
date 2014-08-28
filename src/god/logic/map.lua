@@ -64,7 +64,7 @@ function Map:RemoveCell(x, y)
 	self.cell_pool[x][y] = 0
 end
 
-function Map:SetCell(x, y, value, param)
+function Map:SetCell(x, y, value)
 	if self:IsValid(x, y) ~= 1 then
 		return
 	end
@@ -75,7 +75,6 @@ function Map:SetCell(x, y, value, param)
 		end
 		self.cell_list[value].x = x
 		self.cell_list[value].y = y
-		self.cell_list[value].param = param
 	end
 	return 1
 end
@@ -91,8 +90,19 @@ function Map:GetCellInfo(id)
 	return self.cell_list[id]
 end
 
-function Map:OnChessAdd(id, template_id, logic_x, logic_y)
-	self:SetCell(logic_x, logic_y, id, template_id)
+function Map:OnChessSetPosition(id, x, y, old_x, old_y)
+	local info = self:GetCellInfo(id)
+	if info then
+		self:RemoveCell(info.x, info.y)
+	end
+	self:SetCell(x, y, id)
+	CombineMgr:OnChessChangePostion(id, x, y)
+end
+
+function Map:OnChessAdd(id, template_id, x, y)
+	self:SetCell(x, y, id)
+	CombineMgr:OnChessChangePostion(id, x, y)
+	CombineMgr:CleanUp(x)
 end
 
 function Map:OnChessRemove(id)
@@ -141,142 +151,3 @@ function Map:GetMapOffsetPoint()
 	return offset_x, offset_y
 end
 
-function Map:OnChessSetPosition(id, x, y, old_x, old_y)
-	local info = self:GetCellInfo(id)
-	self:RemoveCell(info.x, info.y)
-	self:MoveChess(id, x, y, info.param)
-end
-
-function Map:MoveChess(id, x, y, param)
-	self:SetCell(x, y, id, param)
-
-	local list_horizontal = self:CheckHorizontalCombine(id)
-	if #list_horizontal >= 3 then
-		self:GenerateWall(list_horizontal)
-	end
-	local list_vertical = self:CheckVerticalCombine(id)
-	if #list_vertical >= 3 then
-		self:GenerateArmy(list_vertical)
-	end
-end
-
-function Map:CheckVerticalCombine(id)
-	local info = self:GetCellInfo(id)
-	local template_id = info.param
-	local combine_list = {id,}
-	for y = info.y + 1 , self.height do
-		local check_id = self:GetCell(info.x, y)
-		if not check_id or check_id <= 0 then
-			break
-		end
-		local check_info = self:GetCellInfo(check_id)
-		assert(check_info)
-		if check_info.param ~= template_id then
-			break
-		end
-		combine_list[#combine_list + 1] = check_id
-	end
-	for y = info.y - 1 , 0, -1 do
-		local check_id = self:GetCell(info.x, y)
-		if not check_id or check_id <= 0 then
-			break
-		end
-		local check_info = self:GetCellInfo(check_id)
-		assert(check_info)
-		if check_info.param ~= template_id then
-			break
-		end
-		combine_list[#combine_list + 1] = check_id
-	end
-	return combine_list
-end
-
-function Map:CheckHorizontalCombine(id)
-	local info = self:GetCellInfo(id)
-	local template_id = info.param
-	local combine_list = {id,}
-	for x = info.x + 1 , self.width do
-		local check_id = self:GetCell(x, info.y)
-		if not check_id or check_id <= 0 then
-			break
-		end
-		local check_info = self:GetCellInfo(check_id)
-		assert(check_info)
-		if check_info.param ~= template_id then
-			break
-		end
-
-		combine_list[#combine_list + 1] = check_id
-	end
-	for x = info.x - 1 , 0, -1 do
-		local check_id = self:GetCell(x, info.y)
-		if not check_id or check_id <= 0 then
-			break
-		end
-		local check_info = self:GetCellInfo(check_id)
-		assert(check_info)
-		if check_info.param ~= template_id then
-			break
-		end
-		combine_list[#combine_list + 1] = check_id
-	end
-	return combine_list
-end
-
-function Map:GenerateWall(list)
-
-	if not list then
-		assert(false)
-		return
-	end
-
-	Lib:ShowTB(list)
-	for _, check_id in ipairs(list) do
-		local check_info = ChessPool:GetById(check_id)
-		check_info:SetTemplate("wall")
-		self:MoveToTop(check_info.x, check_info.y)
-	end
-end
-
-function Map:CanMoveTo(x_src, y_src, x_dest, y_dest)
-	local id_src = self:GetCell(x_src, y_src)
-	if id_src <= 0 then
-		return 0
-	end
-
-	local id_dest = self:GetCell(x_dest, y_dest)
-	if id_dest <= 0 then
-		return 1
-	end
-
-	local chess_src = self:GetById(id_src)
-	local chess_dest = self:GetById(id_dest)
-	if chess_src:GetTemplateId() == chess_dest:GetTemplateId() then
-		return 0
-	end
-	return 1
-end
-
-function Map:MoveToTop(x, y)
-	local check_id = self:GetCell(x, y)
-	local info = self:GetCellInfo(check_id)
-	local target_y = 1
-	while self:CanMoveTo(x, y, x, target_y) ~= 1 and target_y < y do
-		target_y = target_y + 1
-	end
-	print(target_y, y)
-	if target_y >= y then
-		return
-	end	
-	self.cell_pool[x][y] = 0
-	for index = y - 1, target_y, -1 do
-		local move_id = self.cell_pool[x][index]
-		print(x, index, move_id)
-		self:OnChessSetPosition(move_id, x, index + 1, x, index)
-	end
-	self:MoveChess(check_id, x, target_y, info.param) 
-end
-
-function Map:GenerateArmy(list)
-	-- body
-end

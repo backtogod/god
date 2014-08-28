@@ -38,21 +38,21 @@ function Scene:_Init()
 	self:DrawGrip()
 	PickHelper:Init(1)
 
-	ChessPool:Add(Chess, 1, 1, 1)
-	ChessPool:Add(Chess, 2, 2, 2)
-	ChessPool:Add(Chess, 3, 3, 3)
-	ChessPool:Add(Chess, 4, 4, 4)
-	ChessPool:Add(Chess, 5, 5, 5)
+	ChessPool:Add(Chess, 1, 1, 6)
+	ChessPool:Add(Chess, 2, 2, 6)
+	ChessPool:Add(Chess, 3, 3, 6)
+	ChessPool:Add(Chess, 4, 4, 6)
+	ChessPool:Add(Chess, 5, 5, 6)
 	ChessPool:Add(Chess, 6, 6, 6)
 
-	ChessPool:Add(Chess, 1, 2, 5)
-	ChessPool:Add(Chess, 2, 3, 4)
-	ChessPool:Add(Chess, 3, 4, 3)
-	ChessPool:Add(Chess, 4, 5, 2)
-	ChessPool:Add(Chess, 5, 6, 1)
+	ChessPool:Add(Chess, 1, 2, 6)
+	ChessPool:Add(Chess, 2, 3, 6)
+	ChessPool:Add(Chess, 3, 4, 6)
+	ChessPool:Add(Chess, 4, 5, 6)
+	ChessPool:Add(Chess, 5, 6, 6)
 	ChessPool:Add(Chess, 6, 1, 6)
 
-	ChessPool:Add(Chess, 1, 3, 5)
+	ChessPool:Add(Chess, 1, 3, 6)
 
 	EnemyChessPool:Add(Chess, 1, 1, 1)
 	EnemyChessPool:Add(Chess, 2, 2, 1)
@@ -61,8 +61,8 @@ function Scene:_Init()
 	EnemyChessPool:Add(Chess, 5, 5, 1)
 	EnemyChessPool:Add(Chess, 6, 6, 1)
 
-	SelfMap:Debug()
-	EnemyMap:Debug()
+	-- SelfMap:Debug()
+	-- EnemyMap:Debug()
 	
 	return 1
 end
@@ -96,32 +96,26 @@ function Scene:DrawGrip( ... )
 	local draw_node = cc.DrawNode:create()
 	for row = 1, Def.MAP_HEIGHT + 1 do
 		draw_node:drawSegment(
-			cc.p(offset_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_y),
-			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_y),
+			cc.p(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
+			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
 			1, cc.c4f(0, 1, 0, 1))
+		draw_node:drawSegment(
+			cc.p(Map:Mirror(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
+			cc.p(Map:Mirror(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
+			1, cc.c4f(0, 0, 1, 1))
 	end
 
 	for column = 1, Def.MAP_WIDTH + 1 do
 		draw_node:drawSegment(
 			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
+			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  -Def.MAP_HEIGHT * Def.MAP_CELL_HEIGHT  + offset_y),
 			1, cc.c4f(0, 1, 0, 1))
-	end
-
-	local offset_enemy_x, offset_enemy_y = Map:GetEnemyMapOffsetPoint()
-	for row = 1, Def.MAP_HEIGHT + 1 do
 		draw_node:drawSegment(
-			cc.p(offset_enemy_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_enemy_y),
-			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_enemy_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_enemy_y),
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y)),
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  -Def.MAP_HEIGHT * Def.MAP_CELL_HEIGHT  + offset_y)),
 			1, cc.c4f(0, 0, 1, 1))
 	end
 
-	for column = 1, Def.MAP_WIDTH + 1 do
-		draw_node:drawSegment(
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_enemy_x,  offset_enemy_y),
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_enemy_x, Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_enemy_y),
-			1, cc.c4f(0, 0, 1, 1))
-	end
 	self:AddObj("main", "draw", "grid", draw_node)
 end
 
@@ -169,4 +163,5 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	local chess = self:GetObj("main", "chess", id)
 	assert(chess)
 	chess:setColor(cc.c3b(255, 255, 255))
+	CombineMgr:CleanUp(logic_x)
 end

@@ -14,6 +14,7 @@ Scene.property = {
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
+Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
@@ -157,6 +158,26 @@ function Scene:OnChessSetPosition(id, logic_x, logic_y)
 	local chess = self:GetObj("main", "chess", id)
 	local x, y = SelfMap:Logic2PixelSelf(logic_x, logic_y)
 	chess:setPosition(x, y)
+end
+
+function Scene:OnChessSetTemplate(id, template_id)
+	local config = ChessConfig:GetData(template_id)
+	if not config then
+		assert(false)
+		return
+	end
+	local old_sprite = self:GetObj("main", "chess", id)
+	local x, y = old_sprite:getPosition()
+	self:RemoveObj("main", "chess", id)
+
+	local sprite = cc.Sprite:create(config.image)
+	sprite:setPosition(x, y)
+	local rect = sprite:getBoundingBox()
+	local scale_x = Def.MAP_CELL_WIDTH / rect.width
+	local scale_y = Def.MAP_CELL_HEIGHT / rect.height
+	sprite:setScaleX(scale_x)
+	sprite:setScaleY(scale_y)
+	self:AddObj("main", "chess", id, sprite)
 end
 
 function Scene:OnPickChess(id, logic_x, logic_y)

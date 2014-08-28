@@ -11,9 +11,27 @@ if not ChessConfig then
 end
 
 ChessConfig.template = {
-	["test"] = {
+	[1] = {
 		image = "god/1.png",
-	}
+	},
+	[2] = {
+		image = "god/2.png",
+	},
+	[3] = {
+		image = "god/3.png",
+	},
+	[4] = {
+		image = "god/4.png",
+	},
+	[5] = {
+		image = "god/5.png",
+	},
+	[6] = {
+		image = "god/6.png",
+	},
+	["wall"] = {
+		image = "god/7.png",
+	},
 }
 
 

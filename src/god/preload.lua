@@ -7,3 +7,5 @@ AddProjectScript("logic/chess.lua")
 AddProjectScript("scene/sample_scene.lua")
 AddProjectScript("scene/game_scene.lua")
 
+AddProjectScript("config/chess_config.lua")
+

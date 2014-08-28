@@ -19,7 +19,7 @@ function Scene:MainSample()
 	    	{
 				item_name = "scene sample",
 	        	callback_function = function()
-	        		self:SceneSample()
+	        		SceneMgr:LoadScene("GameScene", "GameScene")
 	        	end,
 	        },
 	    },

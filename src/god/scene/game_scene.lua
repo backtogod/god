@@ -24,6 +24,8 @@ function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
 	PickHelper:Uninit()
+
+	return 1
 end
 
 function Scene:_Init()
@@ -68,7 +70,12 @@ function Scene:_Init()
 end
 
 function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
-	local sprite = cc.Sprite:create(string.format("god/%d.png", template_id))
+	local config = ChessConfig:GetData(template_id)
+	if not config then
+		assert(false)
+		return
+	end
+	local sprite = cc.Sprite:create(config.image)
 	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
 	sprite:setPosition(x, y)
 	local rect = sprite:getBoundingBox()
@@ -80,7 +87,12 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
-	local sprite = cc.Sprite:create(string.format("god/%d.png", template_id))
+	local config = ChessConfig:GetData(template_id)
+	if not config then
+		assert(false)
+		return
+	end
+	local sprite = cc.Sprite:create(config.image)
 	local x, y = Map:Logic2PixelEnemy(logic_x, logic_y)
 	sprite:setPosition(x, y)
 	local rect = sprite:getBoundingBox()
@@ -96,30 +108,26 @@ function Scene:DrawGrip( ... )
 	local draw_node = cc.DrawNode:create()
 	for row = 1, Def.MAP_HEIGHT + 1 do
 		draw_node:drawSegment(
-			cc.p(offset_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_y),
-			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_y),
+			cc.p(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
+			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
 			1, cc.c4f(0, 1, 0, 1))
-	end
 
-	for column = 1, Def.MAP_WIDTH + 1 do
+		--enemy
 		draw_node:drawSegment(
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
-			1, cc.c4f(0, 1, 0, 1))
-	end
-
-	local offset_enemy_x, offset_enemy_y = Map:GetEnemyMapOffsetPoint()
-	for row = 1, Def.MAP_HEIGHT + 1 do
-		draw_node:drawSegment(
-			cc.p(offset_enemy_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_enemy_y),
-			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_enemy_x, (row - 1) * Def.MAP_CELL_HEIGHT + offset_enemy_y),
+			cc.p(Map:Mirror(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
+			cc.p(Map:Mirror(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
 			1, cc.c4f(0, 0, 1, 1))
 	end
 
 	for column = 1, Def.MAP_WIDTH + 1 do
 		draw_node:drawSegment(
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_enemy_x,  offset_enemy_y),
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_enemy_x, Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_enemy_y),
+			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
+			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
+			1, cc.c4f(0, 1, 0, 1))
+		--enemy
+		draw_node:drawSegment(
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y)),
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y)),
 			1, cc.c4f(0, 0, 1, 1))
 	end
 	self:AddObj("main", "draw", "grid", draw_node)

@@ -30,8 +30,20 @@ function Chess:_Init(id, template_id, x, y)
 end
 
 function Chess:SetPosition(x, y)
-	local event_name = self:GetClassName() .. ".SET_POSITION"
-	Event:FireEvent(event_name, self:GetId(), x, y, self.x, self.y)
+	local old_x = self.x
+	local old_y = self.y
 	self.x = x
 	self.y = y
+	local event_name = self:GetClassName() .. ".SET_POSITION"
+	Event:FireEvent(event_name, self:GetId(), x, y, old_x, old_y)
+end
+
+function Chess:SetTemplateId(template_id)
+	self.template_id = template_id
+	local event_name = self:GetClassName() .. ".SET_TEMPLATE"
+	Event:FireEvent(event_name, self:GetId(), template_id)
+end
+
+function Chess:GetTemplateId()
+	return self.template_id
 end

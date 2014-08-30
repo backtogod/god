@@ -26,6 +26,8 @@ function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
 	PickHelper:Uninit()
+	GameStateMachine:Uninit()
+	TouchInput:Uninit()
 
 	return 1
 end
@@ -34,6 +36,8 @@ function Scene:_Init()
 	self:AddReturnMenu()
 	self:AddReloadMenu()
 
+	TouchInput:Init()
+	GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH)
 	ChessPool:Init("CHESS")
 	EnemyChessPool:Init("ENEMY_CHESS")
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
@@ -69,6 +73,7 @@ function Scene:_Init()
 	-- SelfMap:Debug()
 	-- EnemyMap:Debug()
 	
+	Event:FireEvent("GAME.END_WATCH")
 	return 1
 end
 
@@ -147,46 +152,15 @@ function Scene:DrawGrip( ... )
 end
 
 function Scene:OnTouchBegan(x, y)
-
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
-	for logic_y = Def.MAP_HEIGHT, 1, -1 do
-		local chess_id = SelfMap:GetCell(logic_x, logic_y)
-		if chess_id and chess_id > 0 then
-			local logic_chess = ChessPool:GetById(chess_id)
-			if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
-				PickHelper:Pick(chess_id, logic_x, logic_y)
-				self.pick_id = chess_id
-			end
-			return
-		end
-	end
+	return TouchInput:OnTouchBegan(x, y)
 end
 
 function Scene:OnTouchMoved(x, y)
-	local id = self.pick_id
-	if not id then
-		return
-	end
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
-	local logic_y = Mover:GetMoveablePosition(SelfMap, id, logic_x)
-	if logic_y > 0 then
-		self:SetSelfChessPosition(id, logic_x, logic_y)
-	end
+	return TouchInput:OnTouchMoved(x, y)
 end
 
 function Scene:OnTouchEnded(x, y)
-	local id = self.pick_id
-	if not id then
-		return
-	end
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
-	local logic_y = Mover:GetMoveablePosition(SelfMap, id, logic_x)
-	if logic_y > 0 then
-		PickHelper:DropAll(logic_x, logic_y)
-	else
-		PickHelper:CancelAll()
-	end
-	self.pick_id = nil
+	return TouchInput:OnTouchEnded(x, y)
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)

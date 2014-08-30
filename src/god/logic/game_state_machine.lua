@@ -24,11 +24,13 @@ GameStateMachine:DeclareListenEvent("GAME.END_WATCH", "OnEndWatch")
 GameStateMachine:DeclareListenEvent("GAME.ACTION_OVER", "OnActionOver")
 
 function GameStateMachine:_Uninit( ... )
-	-- body
+	return 1
 end
 
 function GameStateMachine:_Init(raw_state)
 	self.state = raw_state
+
+	return 1
 end
 
 function GameStateMachine:SetState(state)

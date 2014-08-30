@@ -10,20 +10,6 @@ if not Map then
 	Map = NewLogicNode("MAP")
 end
 
-if not SelfMap then
-	SelfMap = Class:New(Map, "SELF_MAP")
-end
-SelfMap:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
-SelfMap:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
-SelfMap:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
-
-
-if not EnemyMap then
-	EnemyMap = Class:New(Map, "ENEMY_MAP")
-end
-EnemyMap:DeclareListenEvent("ENEMY_CHESS.ADD", "OnChessAdd")
-EnemyMap:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnChessRemove")
-
 function Map:_Init(width, height)
 	self.cell_pool = {}
 	for i = 1, width do
@@ -150,5 +136,63 @@ function Map:GetMapOffsetPoint()
 	local offset_y = (visible_size.height * 0.5 - Def.MAP_OFFSET_Y)
 
 	return offset_x, offset_y
+end
+
+if not SelfMap then
+	SelfMap = Class:New(Map, "SELF_MAP")
+end
+SelfMap:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
+SelfMap:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
+SelfMap:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
+
+function SelfMap:_Uninit()
+	ChessPool:Uninit()
+	return 1
+end
+function SelfMap:_Init()
+	ChessPool:Init("CHESS")
+
+	ChessPool:Add(Chess, 1, 1, 6)
+	ChessPool:Add(Chess, 2, 2, 6)
+	ChessPool:Add(Chess, 3, 3, 6)
+	ChessPool:Add(Chess, 4, 4, 6)
+	ChessPool:Add(Chess, 5, 5, 6)
+	ChessPool:Add(Chess, 6, 6, 6)
+
+	ChessPool:Add(Chess, 1, 2, 6)
+	ChessPool:Add(Chess, 2, 3, 6)
+	ChessPool:Add(Chess, 3, 4, 6)
+	ChessPool:Add(Chess, 4, 5, 6)
+	ChessPool:Add(Chess, 5, 6, 6)
+	ChessPool:Add(Chess, 6, 1, 6)
+
+	ChessPool:Add(Chess, 1, 3, 6)
+	ChessPool:Add(Chess, 2, 4, 6)
+
+	return 1
+end
+
+if not EnemyMap then
+	EnemyMap = Class:New(Map, "ENEMY_MAP")
+end
+EnemyMap:DeclareListenEvent("ENEMY_CHESS.ADD", "OnChessAdd")
+EnemyMap:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnChessRemove")
+
+function EnemyMap:_Uninit()
+	EnemyChessPool:Uninit()
+
+	return 1
+end
+function EnemyMap:_Init()
+	EnemyChessPool:Init("ENEMY_CHESS")
+
+	EnemyChessPool:Add(Chess, 1, 1, 1)
+	EnemyChessPool:Add(Chess, 2, 2, 1)
+	EnemyChessPool:Add(Chess, 3, 3, 1)
+	EnemyChessPool:Add(Chess, 4, 4, 1)
+	EnemyChessPool:Add(Chess, 5, 5, 1)
+	EnemyChessPool:Add(Chess, 6, 6, 1)
+	
+	return 1
 end
 

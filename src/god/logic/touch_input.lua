@@ -14,11 +14,11 @@ TouchInput:DeclareListenEvent("SCREEN.ON_TOUCH_MOVED", "OnTouchMoved")
 TouchInput:DeclareListenEvent("SCREEN.ON_TOUCH_ENDED", "OnTouchEnded")
 
 function TouchInput:_Uninit( ... )
-	-- body
+	return 1
 end
 
 function TouchInput:_Init( ... )
-	-- body
+	return 1
 end
 
 function TouchInput:OnTouchBegan(x, y)

@@ -151,7 +151,7 @@ function Scene:OnTouchBegan(x, y)
 	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
 	for logic_y = Def.MAP_HEIGHT, 1, -1 do
 		local chess_id = SelfMap:GetCell(logic_x, logic_y)
-		if chess_id > 0 then
+		if chess_id and chess_id > 0 then
 			local logic_chess = ChessPool:GetById(chess_id)
 			if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
 				PickHelper:Pick(chess_id, logic_x, logic_y)
@@ -259,5 +259,8 @@ function Scene:OnChessChangeState(id, old_state, state)
 		sprite:setPosition(x, y)
 		sprite:setLocalZOrder(visible_size.height - y)
 		self:AddObj("main", "chess", id, sprite)
+	elseif state == Def.STATE_ARMY then
+		local sprite = self:GetObj("main", "chess", id)
+		sprite:setColor(cc.c3b(0, 255, 0))
 	end
 end

@@ -55,7 +55,8 @@ function CombineMgr:CheckVerticalCombine(id)
 	local chess = ChessPool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
-	if chess:TryCall("GetState") == Def.STATE_WALL then
+	local state = chess:TryCall("GetState")
+	if state == Def.STATE_WALL or state == Def.STATE_ARMY then
 		return combine_list
 	end
 
@@ -76,7 +77,8 @@ function CombineMgr:CheckHorizontalCombine(id)
 	local chess = ChessPool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
-	if chess:TryCall("GetState") == Def.STATE_WALL then
+	local state = chess:TryCall("GetState")
+	if state == Def.STATE_WALL or state == Def.STATE_ARMY then
 		return combine_list
 	end
 	for x = chess.x + 1, SelfMap.width do
@@ -108,6 +110,22 @@ function CombineMgr:GenerateWall(list)
 	end
 end
 
+function CombineMgr:GenerateArmy(list)
+	if not list then
+		assert(false)
+		return
+	end
+
+	for _, check_id in ipairs(list) do
+		local chess = ChessPool:GetById(check_id)
+		if chess:TryCall("SetState", Def.STATE_ARMY) ~= 1 then
+			assert(false)
+			return
+		end
+		self:MoveToTop(check_id)
+	end
+end
+
 function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
 	local id_src = SelfMap:GetCell(x_src, y_src)
 	if id_src <= 0 then
@@ -121,8 +139,13 @@ function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
 
 	local chess_src = ChessPool:GetById(id_src)
 	local chess_dest = ChessPool:GetById(id_dest)
-	if chess_dest:TryCall("GetState") ~= Def.STATE_NORMAL then
+	local dest_state = chess_dest:TryCall("GetState")
+	if dest_state == Def.STATE_WALL then
 		return 0
+	elseif dest_state == Def.STATE_ARMY then
+		if chess_src:TryCall("GetState") ~= Def.STATE_WALL then
+			return 0
+		end
 	end
 	return 1
 end
@@ -138,15 +161,4 @@ function CombineMgr:MoveToTop(id)
 		return
 	end
 	Mover:MoveUp(SelfMap, x, y, target_y)
-end
-
-function CombineMgr:GenerateArmy(list)
-	if not list then
-		assert(false)
-		return
-	end
-
-	for _, check_id in ipairs(list) do
-		local chess = ChessPool:GetById(check_id)
-	end
 end

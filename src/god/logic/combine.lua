@@ -134,15 +134,7 @@ function CombineMgr:MoveToTop(id)
 	if target_y >= y then
 		return
 	end
-	SelfMap:RemoveCell(x, y)
-	for index = y - 1, target_y, -1 do
-		local move_id = SelfMap:GetCell(x, index)
-		local move_chess = ChessPool:GetById(move_id)
-		if move_chess then
-			move_chess:SetPosition(x, index + 1)
-		end
-	end
-	chess:SetPosition(x, target_y)
+	Mover:MoveUp(SelfMap, x, y, target_y)
 end
 
 function CombineMgr:CleanUp(x)

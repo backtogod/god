@@ -102,7 +102,7 @@ end
 function Map:OnChessAdd(id, template_id, x, y)
 	self:SetCell(x, y, id)
 	CombineMgr:OnChessChangePostion(id, x, y)
-	CombineMgr:CleanUp(x)
+	Mover:RemoveHole(self, x)
 end
 
 function Map:OnChessRemove(id)
@@ -117,7 +117,7 @@ function Map:Debug()
 end
 
 function Map:Logic2PixelSelf(logic_x, logic_y)
-	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, (0.5 - logic_y) * Def.MAP_CELL_HEIGHT
+	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, -logic_y * Def.MAP_CELL_HEIGHT
 	local offset_x, offset_y = self:GetMapOffsetPoint()
 
 	return real_x + offset_x, real_y + offset_y
@@ -136,11 +136,12 @@ end
 
 function Map:Logic2PixelEnemy(logic_x, logic_y)
 	local pixel_x, pixel_y = self:Logic2PixelSelf(logic_x, logic_y)
-	return self:Mirror(pixel_x, pixel_y)
+	local mirro_x, mirror_y = self:Mirror(pixel_x, pixel_y)
+	return mirro_x, mirror_y - Def.MAP_CELL_HEIGHT
 end
 
 function Map:Pixel2LogicEnemy(pixel_x, pixel_y)
-	local real_x, real_y = self:Mirror(pixel_x, pixel_y)
+	local real_x, real_y = self:Mirror(pixel_x, pixel_y + Def.MAP_CELL_HEIGHT)
 	return self:Pixel2LogicSelf(real_x, real_y)
 end
 

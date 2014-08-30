@@ -39,6 +39,12 @@ function GameMgr:Preset()
 end
 
 function GameMgr:_Init()
+    local action_node = ComponentMgr:GetComponent("ACTION")
+    for state, allow_state_list in pairs(Def.ALLOW_STATE_RULE) do
+        for _, allow_state in ipairs(allow_state_list) do
+            action_node:AddAllowRule(state, allow_state)
+        end
+    end
 	SceneMgr:FirstLoadScene("Sample")
 	return 1
 end

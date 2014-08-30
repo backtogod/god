@@ -12,3 +12,14 @@ Def.MAP_CELL_WIDTH = 100
 Def.MAP_CELL_HEIGHT = 70
 
 Def.MAP_OFFSET_Y = 50
+
+Def.STATE_NORMAL = "normal"
+Def.STATE_WALL = "wall"
+Def.STATE_ARMY = "army"
+
+
+Def.ALLOW_STATE_RULE = {
+	[Def.STATE_NORMAL] = {Def.STATE_WALL, Def.STATE_ARMY},
+	[Def.STATE_WALL] = {},
+	[Def.STATE_ARMY] = {},
+}

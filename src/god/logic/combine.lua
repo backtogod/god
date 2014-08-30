@@ -55,7 +55,7 @@ function CombineMgr:CheckVerticalCombine(id)
 	local chess = ChessPool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
-	if template_id == "wall" then
+	if chess:TryCall("GetState") == Def.STATE_WALL then
 		return combine_list
 	end
 
@@ -76,7 +76,7 @@ function CombineMgr:CheckHorizontalCombine(id)
 	local chess = ChessPool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
-	if template_id == "wall" then
+	if chess:TryCall("GetState") == Def.STATE_WALL then
 		return combine_list
 	end
 	for x = chess.x + 1, SelfMap.width do
@@ -100,7 +100,10 @@ function CombineMgr:GenerateWall(list)
 
 	for _, check_id in ipairs(list) do
 		local chess = ChessPool:GetById(check_id)
-		chess:SetTemplateId("wall")
+		if chess:TryCall("SetState", Def.STATE_WALL) ~= 1 then
+			assert(false)
+			return
+		end
 		self:MoveToTop(check_id)
 	end
 end
@@ -118,7 +121,7 @@ function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
 
 	local chess_src = ChessPool:GetById(id_src)
 	local chess_dest = ChessPool:GetById(id_dest)
-	if chess_src:GetTemplateId() == chess_dest:GetTemplateId() then
+	if chess_dest:TryCall("GetState") ~= Def.STATE_NORMAL then
 		return 0
 	end
 	return 1
@@ -137,18 +140,13 @@ function CombineMgr:MoveToTop(id)
 	Mover:MoveUp(SelfMap, x, y, target_y)
 end
 
-function CombineMgr:CleanUp(x)
-	local index = 1
-	for y = 1, SelfMap.height do
-		local chess_id = SelfMap:GetCell(x, y)
-		local chess = ChessPool:GetById(chess_id)
-		if chess then
-			chess:SetPosition(x, index)
-			index = index + 1
-		end
-	end
-end
-
 function CombineMgr:GenerateArmy(list)
-	-- body
+	if not list then
+		assert(false)
+		return
+	end
+
+	for _, check_id in ipairs(list) do
+		local chess = ChessPool:GetById(check_id)
+	end
 end

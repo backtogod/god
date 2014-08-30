@@ -26,6 +26,8 @@ function Chess:_Init(id, template_id, x, y)
 	self.template_id = template_id
 	self.x = x
 	self.y = y
+
+	self:AddComponent("action", "ACTION")
 	return 1
 end
 

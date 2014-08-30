@@ -15,6 +15,7 @@ Scene.property = {
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
+Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
@@ -56,6 +57,7 @@ function Scene:_Init()
 	ChessPool:Add(Chess, 6, 1, 6)
 
 	ChessPool:Add(Chess, 1, 3, 6)
+	ChessPool:Add(Chess, 2, 4, 6)
 
 	EnemyChessPool:Add(Chess, 1, 1, 1)
 	EnemyChessPool:Add(Chess, 2, 2, 1)
@@ -151,7 +153,7 @@ function Scene:OnTouchBegan(x, y)
 		local chess_id = SelfMap:GetCell(logic_x, logic_y)
 		if chess_id > 0 then
 			local logic_chess = ChessPool:GetById(chess_id)
-			if logic_chess:GetTemplateId() ~= "wall" then
+			if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
 				PickHelper:Pick(chess_id, logic_x, logic_y)
 				self.pick_id = chess_id
 			end
@@ -191,22 +193,6 @@ function Scene:OnChessSetPosition(id, logic_x, logic_y)
 	return self:SetSelfChessPosition(id, logic_x, logic_y)
 end
 
-function Scene:OnChessSetTemplate(id, template_id)
-	local config = ChessConfig:GetData(template_id)
-	if not config then
-		assert(false)
-		return
-	end
-	local old_sprite = self:GetObj("main", "chess", id)
-	local x, y = old_sprite:getPosition()
-	self:RemoveObj("main", "chess", id)
-
-	local sprite = self:GenerateChessSprite(config.image)
-	sprite:setPosition(x, y)
-	sprite:setLocalZOrder(visible_size.height - y)
-	self:AddObj("main", "chess", id, sprite)
-end
-
 function Scene:OnPickChess(id, logic_x, logic_y)
 	local chess = self:GetObj("main", "chess", id)
 	chess:setOpacity(200)
@@ -239,5 +225,39 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	Mover:RemoveHole(SelfMap, logic_x)
 	if old_x ~= logic_x then
 		Mover:RemoveHole(SelfMap, old_x)
+	end
+end
+
+function Scene:OnChessSetTemplate(id, template_id)
+	local config = ChessConfig:GetData(template_id)
+	if not config then
+		assert(false)
+		return
+	end
+	local old_sprite = self:GetObj("main", "chess", id)
+	local x, y = old_sprite:getPosition()
+	self:RemoveObj("main", "chess", id)
+
+	local sprite = self:GenerateChessSprite(config.image)
+	sprite:setPosition(x, y)
+	sprite:setLocalZOrder(visible_size.height - y)
+	self:AddObj("main", "chess", id, sprite)
+end
+
+function Scene:OnChessChangeState(id, old_state, state)
+	if state == Def.STATE_WALL then
+		local config = ChessConfig:GetData("wall")
+		if not config then
+			assert(false)
+			return
+		end
+		local old_sprite = self:GetObj("main", "chess", id)
+		local x, y = old_sprite:getPosition()
+		self:RemoveObj("main", "chess", id)
+
+		local sprite = self:GenerateChessSprite(config.image)
+		sprite:setPosition(x, y)
+		sprite:setLocalZOrder(visible_size.height - y)
+		self:AddObj("main", "chess", id, sprite)
 	end
 end

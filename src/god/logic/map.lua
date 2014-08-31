@@ -82,6 +82,7 @@ function Map:OnChessSetPosition(id, x, y, old_x, old_y)
 		self:RemoveCell(info.x, info.y)
 	end
 	self:SetCell(x, y, id)
+	CombineMgr:OnChessChangePostion(self, id, logic_x, logic_y)
 end
 
 function Map:OnChessAdd(id, template_id, x, y)
@@ -93,10 +94,11 @@ function Map:OnChessRemove(id)
 	self:RemoveCell(position.x, position.y)
 end
 
-function Map:Debug()
+function Map:Debug(is_detail)
 	Lib:Show2DTB(self.cell_pool, Def.MAP_WIDTH, Def.MAP_HEIGHT, 1)
-
-	Lib:ShowTB(self.cell_list)
+	if is_detail == 1 then
+		Lib:ShowTB(self.cell_list)
+	end
 end
 
 function Map:Logic2PixelSelf(logic_x, logic_y)
@@ -186,15 +188,15 @@ function SelfMap:_Init()
 	-- end
 
 	local function wave_1()
-		ChessSpawner:SpawnChess(self, self.obj_pool)
+		ChessSpawner:SpawnChess(self, {2,2,1,4,4,})
 	end
 
 	local function wave_2()
-		ChessSpawner:SpawnChess(self, self.obj_pool)
+		ChessSpawner:SpawnChess(self, {1,1,2,6,6,4})
 	end
 
 	local function wave_3()
-		ChessSpawner:SpawnChess(self, self.obj_pool)
+		ChessSpawner:SpawnChess(self, {3,2,3,3,2,6})
 	end
 
 	wave_1()

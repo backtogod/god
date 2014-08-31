@@ -171,40 +171,6 @@ function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
 
-function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
-	if not self.wait_helper then
-		self.wait_helper = Class:New(WaitHelper, "Waiter")
-		Event:FireEvent("GAME.START_WATCH")
-		self.wait_helper:Init(2, {self.OnMoveComplete, self}, 
-			function(id)
-				chess_sprite:setPosition(x, y)
-			end
-		)
-	end
-	chess_sprite:setLocalZOrder(visible_size.height - y)
-	local waiter = self.wait_helper
-	local job_id = waiter:WaitJob()
-	local start_x, start_y = chess_sprite:getPosition()
-	local time = math.abs(y - start_y) / 1000
-	if time == 0 then
-		waiter:JobComplete(job_id)
-		return
-	end
-	local move_action = cc.MoveTo:create(time, cc.p(x, y))
-	local callback_action = cc.CallFunc:create(
-		function()
-			waiter:JobComplete(job_id)
-		end
-	)
-	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
-end
-
-function Scene:OnMoveComplete()
-	Event:FireEvent("GAME.END_WATCH")
-	self.wait_helper:Uninit()
-	self.wait_helper = nil
-end
-
 function Scene:OnPickChess(id, logic_x, logic_y)
 	local chess = self:GetObj("main", "chess", id)
 	chess:setOpacity(200)
@@ -256,23 +222,85 @@ function Scene:OnChessSetTemplate(id, template_id)
 	self:AddObj("main", "chess", id, sprite)
 end
 
+function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
+	if not self.wait_move_helper then
+		self.wait_move_helper = Class:New(WaitHelper, "Waiter")
+		Event:FireEvent("GAME.START_WATCH")
+		self.wait_move_helper:Init({self.OnMoveComplete, self})
+	end
+	chess_sprite:setLocalZOrder(visible_size.height - y)
+	local waiter = self.wait_move_helper
+	local function func_time_over(id)
+		chess_sprite:setPosition(x, y)
+	end
+	local job_id = waiter:WaitJob(2, func_time_over)
+	local start_x, start_y = chess_sprite:getPosition()
+	local time = math.abs(y - start_y) / 1000
+	if time == 0 then
+		waiter:JobComplete(job_id)
+		return
+	end
+	local move_action = cc.MoveTo:create(time, cc.p(x, y))
+	local callback_action = cc.CallFunc:create(
+		function()
+			waiter:JobComplete(job_id)
+		end
+	)
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
+end
+
+function Scene:OnMoveComplete()
+	Event:FireEvent("GAME.END_WATCH")
+	self.wait_move_helper:Uninit()
+	self.wait_move_helper = nil
+end
+
 function Scene:OnChessChangeState(id, old_state, state)
+	local transform = nil
+	local chess_sprite = self:GetObj("main", "chess", id)
 	if state == Def.STATE_WALL then
 		local config = ChessConfig:GetData("wall")
 		if not config then
 			assert(false)
 			return
 		end
-		local old_sprite = self:GetObj("main", "chess", id)
-		local x, y = old_sprite:getPosition()
-		self:RemoveObj("main", "chess", id)
-
-		local sprite = self:GenerateChessSprite(config.image)
-		sprite:setPosition(x, y)
-		sprite:setLocalZOrder(visible_size.height - y)
-		self:AddObj("main", "chess", id, sprite)
+		transform = function()
+			self:RemoveObj("main", "chess", id)
+			local logic_chess = ChessPool:GetById(id)
+			local x, y = Map:Logic2PixelSelf(logic_chess.x, logic_chess.y)
+			local sprite = self:GenerateChessSprite(config.image)
+			sprite:setPosition(x, y)
+			sprite:setLocalZOrder(visible_size.height - y)
+			self:AddObj("main", "chess", id, sprite)
+		end
 	elseif state == Def.STATE_ARMY then
-		local sprite = self:GetObj("main", "chess", id)
-		sprite:setColor(cc.c3b(0, 255, 0))
+		transform = function()
+			chess_sprite:setColor(cc.c3b(0, 255, 0))
+		end
 	end
+
+	if not self.wait_transform_helper then
+		self.wait_transform_helper = Class:New(WaitHelper, "Waiter")
+		Event:FireEvent("GAME.START_WATCH")
+		self.wait_transform_helper:Init({self.OnTransformComplete, self})
+	end
+
+	local waiter = self.wait_transform_helper
+	local job_id = waiter:WaitJob(2, transform)
+
+	local blink_action = cc.Blink:create(0.5, 5)
+	local callback_action = cc.CallFunc:create(
+		function()
+			transform()
+			waiter:JobComplete(job_id)
+		end
+	)
+	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action))
+end
+
+function Scene:OnTransformComplete()
+	self.wait_transform_helper:Uninit()
+	self.wait_transform_helper = nil
+	Mover:MoveWall(SelfMap)
+	Mover:MoveArmy(SelfMap)
 end

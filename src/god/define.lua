@@ -7,9 +7,9 @@
 --=======================================================================
 
 Def.MAP_WIDTH = 6
-Def.MAP_HEIGHT = 6
-Def.MAP_CELL_WIDTH = 100
-Def.MAP_CELL_HEIGHT = 70
+Def.MAP_HEIGHT = 4
+Def.MAP_CELL_WIDTH = 90
+Def.MAP_CELL_HEIGHT = 80
 
 Def.MAP_OFFSET_Y = 50
 

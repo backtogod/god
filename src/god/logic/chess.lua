@@ -32,6 +32,9 @@ function Chess:_Init(id, template_id, x, y)
 end
 
 function Chess:SetPosition(x, y)
+	if self.x == x and self.y == y then
+		return
+	end
 	local old_x = self.x
 	local old_y = self.y
 	self.x = x

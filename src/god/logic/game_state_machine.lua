@@ -43,7 +43,7 @@ end
 
 function GameStateMachine:SetState(state)
 	self.state = state
-	Event:FireEvent("GameState.CHANGE", state)
+	-- Event:FireEvent("GameState.CHANGE", state)
 	print(self.DEBUG_DISPLAY[state])
 end
 

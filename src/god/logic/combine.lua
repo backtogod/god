@@ -42,6 +42,9 @@ function CombineMgr:CheckCanCombine(map, template_id, x, y, combine_list)
 	end
 	local check_chess = map.obj_pool:GetById(check_id)
 	assert(check_chess)
+	if check_chess:TryCall("GetState") ~= Def.STATE_NORMAL then
+		return 0
+	end
 	if check_chess:GetTemplateId() ~= template_id then
 		return 0
 	end

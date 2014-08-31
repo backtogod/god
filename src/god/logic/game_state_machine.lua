@@ -43,8 +43,7 @@ end
 
 function GameStateMachine:SetState(state)
 	self.state = state
-	-- Event:FireEvent("GameState.CHANGE", state)
-	print(self.DEBUG_DISPLAY[state])
+	Event:FireEvent("GAME_STATE.CHANGE", state)
 end
 
 function GameStateMachine:GetState( )
@@ -63,6 +62,13 @@ function GameStateMachine:IsInEnemyAction()
 		return 0
 	end
 	return 1
+end
+
+function GameStateMachine:IsWatching()
+	if self:GetState() == self.STATE_SELF_WATCH or self:GetState() == self.STATE_ENEMY_WATCH then
+		return 1
+	end
+	return 0
 end
 
 function GameStateMachine:CanOperate()
@@ -96,5 +102,4 @@ function GameStateMachine:OnActionOver()
 	elseif self:IsInSelfAction() == 1 then
 		self:SetState(self.STATE_ENEMY_OPERATE)
 	end
-	self:SetState(self.STATE_ENEMY_OPERATE)
 end

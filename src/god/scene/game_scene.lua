@@ -23,7 +23,9 @@ Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
 Scene:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
 
+Scene:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
+Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
 
 function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
@@ -52,15 +54,65 @@ function Scene:InitUI()
 	self:AddReturnMenu()
 	self:AddReloadMenu()
 
-	local label = cc.Label:createWithSystemFont("0", "Arial", 70)
-	label:setTextColor(cc.c4b(100, 200, 255, 255))
-	-- label:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
 	local ui_frame = self:GetUI()
-	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", visible_size.width / 2, visible_size.height / 2, label)
+
+	local label_round = cc.Label:createWithSystemFont("Round X", "Arial", 40)
+	label_round:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_round:setAnchorPoint(cc.p(0, 0.5))
+	-- label_round:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 50, label_round)
+
+	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 40)
+	label_state:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_state:setAnchorPoint(cc.p(0, 0.5))
+	-- label_state:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 50, label_state)
+
+	local label_rest_num_title = cc.Label:createWithSystemFont("剩余可行动次数:", nil, 40)
+	label_rest_num_title:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_rest_num_title:setAnchorPoint(cc.p(0, 0.5))
+	-- label_rest_num_title:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNumTitle", 50, visible_size.height - 120 , label_rest_num_title)
+
+	local rect = label_rest_num_title:getBoundingBox()
+	local label_rest_num = cc.Label:createWithSystemFont("0", "Arial", 40)
+	label_rest_num:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_rest_num:setAnchorPoint(cc.p(0, 0.5))
+	-- label_rest_num:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 10, visible_size.height - 120 , label_rest_num)
 
 	self:DrawGrip()
 
 	return 1
+end
+
+function Scene:DrawGrip( ... )
+	local offset_x, offset_y = Map:GetMapOffsetPoint()
+	local draw_node = cc.DrawNode:create()
+	for row = 1, Def.MAP_HEIGHT + 1 do
+		draw_node:drawSegment(
+			cc.p(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
+			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
+			1, cc.c4f(1, 1, 1, 0.3))
+		--enemy
+		draw_node:drawSegment(
+			cc.p(Map:Mirror(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
+			cc.p(Map:Mirror(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
+			1, cc.c4f(1, 1, 1, 0.3))
+	end
+
+	for column = 1, Def.MAP_WIDTH + 1 do
+		draw_node:drawSegment(
+			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
+			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
+			3, cc.c4f(0, 1, 0, 1))
+		--enemy
+		draw_node:drawSegment(
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y)),
+			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y)),
+			3, cc.c4f(0, 0, 1, 1))
+	end
+	self:AddObj("main", "draw", "grid", draw_node)
 end
 
 function Scene:GenerateChessSprite(image_name)
@@ -112,35 +164,6 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 	self:MoveChessToPosition(id, chess_sprite, x, y)
 end
 
-function Scene:DrawGrip( ... )
-	local offset_x, offset_y = Map:GetMapOffsetPoint()
-	local draw_node = cc.DrawNode:create()
-	for row = 1, Def.MAP_HEIGHT + 1 do
-		draw_node:drawSegment(
-			cc.p(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
-			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
-			1, cc.c4f(1, 1, 1, 0.3))
-		--enemy
-		draw_node:drawSegment(
-			cc.p(Map:Mirror(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
-			cc.p(Map:Mirror(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
-			1, cc.c4f(1, 1, 1, 0.3))
-	end
-
-	for column = 1, Def.MAP_WIDTH + 1 do
-		draw_node:drawSegment(
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
-			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
-			3, cc.c4f(0, 1, 0, 1))
-		--enemy
-		draw_node:drawSegment(
-			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y)),
-			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y)),
-			3, cc.c4f(0, 0, 1, 1))
-	end
-	self:AddObj("main", "draw", "grid", draw_node)
-end
-
 function Scene:OnTouchBegan(x, y)
 	return TouchInput:OnTouchBegan(x, y)
 end
@@ -151,11 +174,6 @@ end
 
 function Scene:OnTouchEnded(x, y)
 	return TouchInput:OnTouchEnded(x, y)
-end
-
-function Scene:OnRoundRestNumChanged(rest_num)
-	local label = Ui:GetElement(self:GetUI(), "LABEL", "RestRoundNum")
-	label:setString(tostring(rest_num))
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
@@ -223,9 +241,16 @@ function Scene:OnChessSetTemplate(id, template_id)
 end
 
 function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
+	local start_x, start_y = chess_sprite:getPosition()
+	local time = math.abs(y - start_y) / 1000
+	if time == 0 then
+		return
+	end
 	if not self.wait_move_helper then
 		self.wait_move_helper = Class:New(WaitHelper, "Waiter")
-		Event:FireEvent("GAME.START_WATCH")
+		if GameStateMachine:IsWatching() ~= 1 then
+			Event:FireEvent("GAME.START_WATCH")
+		end
 		self.wait_move_helper:Init({self.OnMoveComplete, self})
 	end
 	chess_sprite:setLocalZOrder(visible_size.height - y)
@@ -246,11 +271,14 @@ function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
 			waiter:JobComplete(job_id)
 		end
 	)
-	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
+	local delay_action = cc.DelayTime:create(0.2)
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action, delay_action))
 end
 
 function Scene:OnMoveComplete()
-	Event:FireEvent("GAME.END_WATCH")
+	if not self.wait_transform_helper then
+		Event:FireEvent("GAME.END_WATCH")
+	end
 	self.wait_move_helper:Uninit()
 	self.wait_move_helper = nil
 end
@@ -281,7 +309,9 @@ function Scene:OnChessChangeState(id, old_state, state)
 
 	if not self.wait_transform_helper then
 		self.wait_transform_helper = Class:New(WaitHelper, "Waiter")
-		Event:FireEvent("GAME.START_WATCH")
+		if GameStateMachine:IsWatching() ~= 1 then
+			Event:FireEvent("GAME.START_WATCH")
+		end
 		self.wait_transform_helper:Init({self.OnTransformComplete, self})
 	end
 
@@ -295,7 +325,8 @@ function Scene:OnChessChangeState(id, old_state, state)
 			waiter:JobComplete(job_id)
 		end
 	)
-	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action))
+	local delay_action = cc.DelayTime:create(0.2)
+	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
 end
 
 function Scene:OnTransformComplete()
@@ -303,4 +334,23 @@ function Scene:OnTransformComplete()
 	self.wait_transform_helper = nil
 	Mover:MoveWall(SelfMap)
 	Mover:MoveArmy(SelfMap)
+end
+
+function Scene:OnActionStart(round)
+	local label = Ui:GetElement(self:GetUI(), "LABEL", "RoundTitle")
+	label:setString(string.format("Round %d", round))
+
+	local label = Ui:GetElement(self:GetUI(), "LABEL", "RestRoundNum")
+	local rest_num = ActionMgr:GetRestRoundNum()
+	label:setString(tostring(rest_num))
+end
+
+function Scene:OnRoundRestNumChanged(rest_num)
+	local label = Ui:GetElement(self:GetUI(), "LABEL", "RestRoundNum")
+	label:setString(tostring(rest_num))
+end
+
+function Scene:OnGameStateChanged(state)
+	local label = Ui:GetElement(self:GetUI(), "LABEL", "State")
+	label:setString(GameStateMachine.DEBUG_DISPLAY[state] or "UNKNOWN")
 end

@@ -10,8 +10,6 @@ if not CombineMgr then
 	CombineMgr = ModuleMgr:NewModule("COMBINE")
 end
 
-CombineMgr:DeclareListenEvent("CHESS.SET_POSITION", OnChessSetPostion)
-
 function CombineMgr:_Init( ... )
 	-- body
 end
@@ -24,25 +22,25 @@ function CombineMgr:CheckCombine(id)
 	-- body
 end
 
-function CombineMgr:OnChessChangePostion(id, x, y)
-	local list_horizontal = self:CheckHorizontalCombine(id)
+function CombineMgr:OnChessChangePostion(map, id, x, y)
+	local list_horizontal = self:CheckHorizontalCombine(map, id)
 	if #list_horizontal >= 3 then
-		self:GenerateWall(list_horizontal)
+		self:GenerateWall(map, list_horizontal, y)
 		return
 	end
-	local list_vertical = self:CheckVerticalCombine(id)
+	local list_vertical = self:CheckVerticalCombine(map, id)
 	if #list_vertical >= 3 then
-		self:GenerateArmy(list_vertical)
+		self:GenerateArmy(map, list_vertical, x)
 		return
 	end
 end
 
-function CombineMgr:CheckCanCombine(template_id, x, y, combine_list)
+function CombineMgr:CheckCanCombine(map, template_id, x, y, combine_list)
 	local check_id = SelfMap:GetCell(x, y)
 	if not check_id or check_id <= 0 then
 		return 0
 	end
-	local check_chess = ChessPool:GetById(check_id)
+	local check_chess = map.obj_pool:GetById(check_id)
 	assert(check_chess)
 	if check_chess:GetTemplateId() ~= template_id then
 		return 0
@@ -51,8 +49,8 @@ function CombineMgr:CheckCanCombine(template_id, x, y, combine_list)
 	return 1
 end
 
-function CombineMgr:CheckVerticalCombine(id)
-	local chess = ChessPool:GetById(id)
+function CombineMgr:CheckVerticalCombine(map, id)
+	local chess = map.obj_pool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
 	local state = chess:TryCall("GetState")
@@ -61,20 +59,20 @@ function CombineMgr:CheckVerticalCombine(id)
 	end
 
 	for y = chess.y + 1 , SelfMap.height do
-		if self:CheckCanCombine(template_id, chess.x, y, combine_list) == 0 then
+		if self:CheckCanCombine(map, template_id, chess.x, y, combine_list) == 0 then
 			break
 		end
 	end
 	for y = chess.y - 1 , 0, -1 do
-		if self:CheckCanCombine(template_id, chess.x, y, combine_list) == 0 then
+		if self:CheckCanCombine(map, template_id, chess.x, y, combine_list) == 0 then
 			break
 		end
 	end
 	return combine_list
 end
 
-function CombineMgr:CheckHorizontalCombine(id)
-	local chess = ChessPool:GetById(id)
+function CombineMgr:CheckHorizontalCombine(map, id)
+	local chess = map.obj_pool:GetById(id)
 	local template_id = chess:GetTemplateId()
 	local combine_list = {id,}
 	local state = chess:TryCall("GetState")
@@ -82,51 +80,76 @@ function CombineMgr:CheckHorizontalCombine(id)
 		return combine_list
 	end
 	for x = chess.x + 1, SelfMap.width do
-		if self:CheckCanCombine(template_id, x, chess.y, combine_list) == 0 then
+		if self:CheckCanCombine(map, template_id, x, chess.y, combine_list) == 0 then
 			break
 		end
 	end
 	for x = chess.x - 1, 0, -1 do
-		if self:CheckCanCombine(template_id, x, chess.y, combine_list) == 0 then
+		if self:CheckCanCombine(map, template_id, x, chess.y, combine_list) == 0 then
 			break
 		end
 	end
 	return combine_list
 end
 
-function CombineMgr:GenerateWall(list)
+function CombineMgr:GenerateWall(map, list)
 	if not list then
 		assert(false)
 		return
 	end
 
 	for _, check_id in ipairs(list) do
-		local chess = ChessPool:GetById(check_id)
+		local chess = map.obj_pool:GetById(check_id)
 		if chess:TryCall("SetState", Def.STATE_WALL) ~= 1 then
 			assert(false)
 			return
 		end
-		self:MoveToTop(check_id)
+		self:MoveToTop(map, check_id)
+	end
+	for _, check_id in ipairs(list) do
+		local info = map:GetCellInfo(check_id)
+		local x = info.x
+		for y = 1, Def.MAP_HEIGHT do
+			local chess_id = map:GetCell(x, y)
+			local chess = map.obj_pool:GetById(chess_id)
+			if chess then
+				chess:SetPosition(x, y)
+			end
+		end
 	end
 end
 
-function CombineMgr:GenerateArmy(list)
+function CombineMgr:GenerateArmy(map, list, x)
 	if not list then
 		assert(false)
 		return
 	end
+	local function cmp(a, b)
+		local info_a = map:GetCellInfo(a)
+		local info_b = map:GetCellInfo(b)
+		return info_b.y > info_a.y
+	end
+	table.sort(list, cmp)
 
 	for _, check_id in ipairs(list) do
-		local chess = ChessPool:GetById(check_id)
+		local chess = map.obj_pool:GetById(check_id)
 		if chess:TryCall("SetState", Def.STATE_ARMY) ~= 1 then
 			assert(false)
 			return
 		end
-		self:MoveToTop(check_id)
+		self:MoveToTop(map, check_id)
+	end
+
+	for y = 1, Def.MAP_HEIGHT do
+		local chess_id = map:GetCell(x, y)
+		local chess = map.obj_pool:GetById(chess_id)
+		if chess then
+			chess:SetPosition(x, y)
+		end
 	end
 end
 
-function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
+function CombineMgr:CanMoveTo(map, x_src, y_src, x_dest, y_dest)
 	local id_src = SelfMap:GetCell(x_src, y_src)
 	if id_src <= 0 then
 		return 0
@@ -137,8 +160,8 @@ function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
 		return 1
 	end
 
-	local chess_src = ChessPool:GetById(id_src)
-	local chess_dest = ChessPool:GetById(id_dest)
+	local chess_src = map.obj_pool:GetById(id_src)
+	local chess_dest = map.obj_pool:GetById(id_dest)
 	local dest_state = chess_dest:TryCall("GetState")
 	if dest_state == Def.STATE_WALL then
 		return 0
@@ -150,11 +173,11 @@ function CombineMgr:CanMoveTo(x_src, y_src, x_dest, y_dest)
 	return 1
 end
 
-function CombineMgr:MoveToTop(id)
-	local chess = ChessPool:GetById(id)
+function CombineMgr:MoveToTop(map, id)
+	local chess = map:GetCellInfo(id)
 	local x, y = chess.x, chess.y
 	local target_y = 1
-	while self:CanMoveTo(x, y, x, target_y) ~= 1 and target_y < y do
+	while self:CanMoveTo(map, x, y, x, target_y) ~= 1 and target_y < y do
 		target_y = target_y + 1
 	end
 	if target_y >= y then

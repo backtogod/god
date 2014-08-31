@@ -82,13 +82,10 @@ function Map:OnChessSetPosition(id, x, y, old_x, old_y)
 		self:RemoveCell(info.x, info.y)
 	end
 	self:SetCell(x, y, id)
-	CombineMgr:OnChessChangePostion(id, x, y)
 end
 
 function Map:OnChessAdd(id, template_id, x, y)
 	self:SetCell(x, y, id)
-	CombineMgr:OnChessChangePostion(id, x, y)
-	Mover:RemoveHole(self, x)
 end
 
 function Map:OnChessRemove(id)
@@ -97,7 +94,7 @@ function Map:OnChessRemove(id)
 end
 
 function Map:Debug()
-	Lib:Show2DTB(self.cell_pool, Def.MAP_WIDTH, Def.MAP_HEIGHT)
+	Lib:Show2DTB(self.cell_pool, Def.MAP_WIDTH, Def.MAP_HEIGHT, 1)
 
 	Lib:ShowTB(self.cell_list)
 end
@@ -149,25 +146,60 @@ function SelfMap:_Uninit()
 	ChessPool:Uninit()
 	return 1
 end
+
 function SelfMap:_Init()
 	ChessPool:Init("CHESS")
+	self.obj_pool = ChessPool
 
-	ChessPool:Add(Chess, 1, 1, 6)
-	ChessPool:Add(Chess, 2, 2, 6)
-	ChessPool:Add(Chess, 3, 3, 6)
-	ChessPool:Add(Chess, 4, 4, 6)
-	ChessPool:Add(Chess, 5, 5, 6)
-	ChessPool:Add(Chess, 6, 6, 6)
+	-- local random_list = {}
+	-- local max_wave = 0
+	-- for i = 1, 14 do
+	-- 	local n = math.random(1, 6)
+	-- 	if not random_list[n] then
+	-- 		random_list[n] = {}
+	-- 	end
+	-- 	table.insert(random_list[n], 1)
+	-- 	if #random_list[n] > max_wave then
+	-- 		max_wave = #random_list[n]
+	-- 	end
+	-- end
+	-- local function wave(wave_count, count)
+	-- 	for i = 1, count do
+	-- 		ChessPool:Add(Chess, math.random(1, 6), math.random(1, 6), 6)
+	-- 	end
+	-- end
 
-	ChessPool:Add(Chess, 1, 2, 6)
-	ChessPool:Add(Chess, 2, 3, 6)
-	ChessPool:Add(Chess, 3, 4, 6)
-	ChessPool:Add(Chess, 4, 5, 6)
-	ChessPool:Add(Chess, 5, 6, 6)
-	ChessPool:Add(Chess, 6, 1, 6)
+	-- local delay_frame = 0
+	-- local add_frame = 5
+	-- for i = 1, max_wave do
+	-- 	delay_frame = delay_frame + add_frame
+	-- 	add_frame = add_frame - 1
+	-- 	local count = 0
+	-- 	for j = 1, 6 do
+	-- 		if random_list[j] and #random_list[j] > 0 then
+	-- 			table.remove(random_list[j], #random_list[j])
+	-- 			count = count + 1
+	-- 		end
+	-- 	end
+	-- 	self:RegistLogicTimer(delay_frame, {wave, i, count})
+		
+	-- end
 
-	ChessPool:Add(Chess, 1, 3, 6)
-	ChessPool:Add(Chess, 2, 4, 6)
+	local function wave_1()
+		ChessSpawner:SpawnChess(self, self.obj_pool)
+	end
+
+	local function wave_2()
+		ChessSpawner:SpawnChess(self, self.obj_pool)
+	end
+
+	local function wave_3()
+		ChessSpawner:SpawnChess(self, self.obj_pool)
+	end
+
+	wave_1()
+	self:RegistLogicTimer(5, {wave_2})
+	self:RegistLogicTimer(10, {wave_3})
 
 	return 1
 end
@@ -185,14 +217,10 @@ function EnemyMap:_Uninit()
 end
 function EnemyMap:_Init()
 	EnemyChessPool:Init("ENEMY_CHESS")
+	self.obj_pool = EnemyChessPool
 
-	EnemyChessPool:Add(Chess, 1, 1, 1)
-	EnemyChessPool:Add(Chess, 2, 2, 1)
-	EnemyChessPool:Add(Chess, 3, 3, 1)
-	EnemyChessPool:Add(Chess, 4, 4, 1)
-	EnemyChessPool:Add(Chess, 5, 5, 1)
-	EnemyChessPool:Add(Chess, 6, 6, 1)
-	
+	ChessSpawner:SpawnChess(self, self.obj_pool)
+
 	return 1
 end
 

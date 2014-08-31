@@ -7,6 +7,8 @@ AddProjectScript("logic/combine.lua")
 AddProjectScript("logic/mover.lua")
 AddProjectScript("logic/touch_input.lua")
 AddProjectScript("logic/game_state_machine.lua")
+AddProjectScript("logic/action_mgr.lua")
+AddProjectScript("logic/chess_spawner.lua")
 
 AddProjectScript("scene/sample_scene.lua")
 AddProjectScript("scene/game_scene.lua")

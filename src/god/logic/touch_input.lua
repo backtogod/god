@@ -34,6 +34,7 @@ function TouchInput:OnTouchBegan(x, y)
 				PickHelper:Pick(chess_id, logic_x, logic_y)
 				self.pick_id = chess_id
 				self.last_logic_x = logic_x
+				self.pick_logic_x = logic_x
 			end
 			return
 		end
@@ -50,9 +51,16 @@ function TouchInput:OnTouchMoved(x, y)
 		return
 	end
 	self.last_logic_x = logic_x
-	local logic_y = Mover:GetMoveablePosition(SelfMap, id, logic_x)
+	local logic_y = Mover:GetMoveablePosition(SelfMap, logic_x, 
+		function(check_chess_id)
+			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
+				return 1
+			end
+			return 0
+		end
+	)
 	if logic_y > 0 then
-		Event:FireEvent("CHESS.SET_POSITION", id, logic_x, logic_y)
+		Event:FireEvent("CHESS.SET_DISPLAY_POSITION", id, logic_x, logic_y)
 	end
 end
 
@@ -62,12 +70,20 @@ function TouchInput:OnTouchEnded(x, y)
 		return
 	end
 	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
-	local logic_y = Mover:GetMoveablePosition(SelfMap, id, logic_x)
-	if logic_y > 0 then
+	local logic_y = Mover:GetMoveablePosition(SelfMap, logic_x,
+		function(check_chess_id)
+			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
+				return 1
+			end
+			return 0
+		end
+	)
+	if logic_y > 0 and self.pick_logic_x ~= logic_x then
 		PickHelper:DropAll(logic_x, logic_y)
 	else
 		PickHelper:CancelAll()
 	end
 	self.pick_id = nil
 	self.last_logic_x = nil
+	self.pick_logic_x = nil
 end

@@ -19,22 +19,32 @@ GameStateMachine.STATE_ENEMY_OPERATE = 12
 GameStateMachine.STATE_ENEMY_WATCH = 13
 GameStateMachine.STATE_ENEMY_ACTION_END = 20
 
+GameStateMachine.DEBUG_DISPLAY = {
+	[GameStateMachine.STATE_SELF_OPERATE ] = "SELF_OPERATE",
+	[GameStateMachine.STATE_SELF_WATCH   ] = "SELF_WATCH",
+	[GameStateMachine.STATE_ENEMY_OPERATE] = "ENEMY_OPERATE",
+	[GameStateMachine.STATE_ENEMY_WATCH  ] = "ENEMY_WATCH",
+}
+
 GameStateMachine:DeclareListenEvent("GAME.START_WATCH", "OnStartWatch")
-GameStateMachine:DeclareListenEvent("GAME.END_WATCH", "OnEndWatch")
-GameStateMachine:DeclareListenEvent("GAME.ACTION_OVER", "OnActionOver")
 
 function GameStateMachine:_Uninit( ... )
+	ChessSpawner:Uninit()
+	ActionMgr:Uninit()
 	return 1
 end
 
 function GameStateMachine:_Init(raw_state)
 	self.state = raw_state
-
+	ActionMgr:Init(Def.DEFAULT_ROUND_NUM)
+	ChessSpawner:Init()
 	return 1
 end
 
 function GameStateMachine:SetState(state)
 	self.state = state
+	Event:FireEvent("GameState.CHANGE", state)
+	print(self.DEBUG_DISPLAY[state])
 end
 
 function GameStateMachine:GetState( )

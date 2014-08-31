@@ -23,3 +23,5 @@ Def.ALLOW_STATE_RULE = {
 	[Def.STATE_WALL] = {},
 	[Def.STATE_ARMY] = {},
 }
+
+Def.DEFAULT_ROUND_NUM = 5

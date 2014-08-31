@@ -15,7 +15,7 @@ function Mover:RemoveHole(map, x)
 	for y = 1, map.height do
 		local chess_id = map:GetCell(x, y)
 		if chess_id >= 0 then
-			local move_chess = ChessPool:GetById(chess_id)
+			local move_chess = map.obj_pool:GetById(chess_id)
 			if move_chess then
 				if y ~= index then
 					move_chess:SetPosition(x, index)
@@ -26,11 +26,11 @@ function Mover:RemoveHole(map, x)
 	end
 end
 
-function Mover:GetMoveablePosition(map, id, x)
+function Mover:GetMoveablePosition(map, x, judge_fun)
 	local ret_y = -1
 	for y = Def.MAP_HEIGHT, 1, -1 do
 		local chess_id = map:GetCell(x, y)
-		if (chess_id and chess_id <= 0) or chess_id == id then
+		if (judge_fun and judge_fun(chess_id) == 1) or (chess_id and chess_id <= 0) then
 			ret_y = y
 		else
 			break
@@ -47,14 +47,14 @@ function Mover:MoveUp(map, x, y, target_y)
 	if id <= 0 then
 		return
 	end
-	local chess = ChessPool:GetById(id)
+	local chess = map.obj_pool:GetById(id)
 	map:RemoveCell(x, y)
 	for index = y - 1, target_y, -1 do
 		local move_id = map:GetCell(x, index)
-		local move_chess = ChessPool:GetById(move_id)
+		local move_chess = map.obj_pool:GetById(move_id)
 		if move_chess then
-			move_chess:SetPosition(x, index + 1)
+			map:SetCell(x, index + 1, move_id)
 		end
 	end
-	chess:SetPosition(x, target_y)
+	map:SetCell(x, target_y, id)
 end

@@ -30,7 +30,7 @@ ChessConfig.template = {
 		image = "god/6.png",
 	},
 	["wall"] = {
-		image = "god/7.png",
+		image = "god/wall.png",
 	},
 }
 

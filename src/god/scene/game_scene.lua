@@ -14,6 +14,7 @@ Scene.property = {
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
+Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
 Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
@@ -21,6 +22,8 @@ Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
 Scene:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
+
+Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
 
 function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
@@ -33,20 +36,30 @@ function Scene:_Uninit( ... )
 end
 
 function Scene:_Init()
-	self:AddReturnMenu()
-	self:AddReloadMenu()
-
+	assert(self:InitUI() == 1)
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(PickHelper:Init(1) == 1)
-	self:DrawGrip()
 
 	-- SelfMap:Debug()
 	-- EnemyMap:Debug()
-	
-	Event:FireEvent("GAME.END_WATCH")
+	return 1
+end
+
+function Scene:InitUI()
+	self:AddReturnMenu()
+	self:AddReloadMenu()
+
+	local label = cc.Label:createWithSystemFont("0", "Arial", 70)
+	label:setTextColor(cc.c4b(100, 200, 255, 255))
+	-- label:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	local ui_frame = self:GetUI()
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", visible_size.width / 2, visible_size.height / 2, label)
+
+	self:DrawGrip()
+
 	return 1
 end
 
@@ -79,9 +92,11 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 		assert(false)
 		return
 	end
-	local sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", "chess", id, sprite)
-	self:SetSelfChessPosition(id, logic_x, logic_y)
+	local chess_sprite = self:GenerateChessSprite(config.image)
+	self:AddObj("main", "chess", id, chess_sprite)
+	self:SetSelfChessPosition(id, logic_x, Def.MAP_HEIGHT)
+	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
+	self:MoveChessToPosition(id, chess_sprite, x, y)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -90,9 +105,11 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 		assert(false)
 		return
 	end
-	local sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", "enemy_chess", id, sprite)
-	self:SetEnemyChessPosition(id, logic_x, logic_y)
+	local chess_sprite = self:GenerateChessSprite(config.image)
+	self:AddObj("main", "enemy_chess", id, chess_sprite)
+	self:SetEnemyChessPosition(id, logic_x, Def.MAP_HEIGHT)
+	local x, y = Map:Logic2PixelEnemy(logic_x, logic_y)
+	self:MoveChessToPosition(id, chess_sprite, x, y)
 end
 
 function Scene:DrawGrip( ... )
@@ -136,8 +153,56 @@ function Scene:OnTouchEnded(x, y)
 	return TouchInput:OnTouchEnded(x, y)
 end
 
+function Scene:OnRoundRestNumChanged(rest_num)
+	local label = Ui:GetElement(self:GetUI(), "LABEL", "RestRoundNum")
+	label:setString(tostring(rest_num))
+end
+
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
-	return self:SetSelfChessPosition(id, logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
+	return self:MoveChessToPosition(id, chess, x, y)
+end
+
+function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
+	local chess = self:GetObj("main", "chess", id)
+	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
+	chess:setPosition(x, y)
+	chess:setLocalZOrder(visible_size.height - y)
+end
+
+function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
+	if not self.wait_helper then
+		self.wait_helper = Class:New(WaitHelper, "Waiter")
+		Event:FireEvent("GAME.START_WATCH")
+		self.wait_helper:Init(2, {self.OnMoveComplete, self}, 
+			function(id)
+				chess_sprite:setPosition(x, y)
+			end
+		)
+	end
+	chess_sprite:setLocalZOrder(visible_size.height - y)
+	local waiter = self.wait_helper
+	local job_id = waiter:WaitJob()
+	local start_x, start_y = chess_sprite:getPosition()
+	local time = math.abs(y - start_y) / 1000
+	if time == 0 then
+		waiter:JobComplete(job_id)
+		return
+	end
+	local move_action = cc.MoveTo:create(time, cc.p(x, y))
+	local callback_action = cc.CallFunc:create(
+		function()
+			waiter:JobComplete(job_id)
+		end
+	)
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
+end
+
+function Scene:OnMoveComplete()
+	Event:FireEvent("GAME.END_WATCH")
+	self.wait_helper:Uninit()
+	self.wait_helper = nil
 end
 
 function Scene:OnPickChess(id, logic_x, logic_y)
@@ -162,17 +227,17 @@ function Scene:OnCancelPickChess(id)
 end
 
 function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
-	local logic_chess = ChessPool:GetById(id)
-	assert(logic_chess)
-	logic_chess:SetPosition(logic_x, logic_y)
 	local chess = self:GetObj("main", "chess", id)
 	assert(chess)
 	chess:setOpacity(255)
+	self:SetSelfChessPosition(id, logic_x, logic_y)
 	self:RemoveObj("main", "chess", "copy")
-	Mover:RemoveHole(SelfMap, logic_x)
-	if old_x ~= logic_x then
-		Mover:RemoveHole(SelfMap, old_x)
-	end
+	ActionMgr:OperateChess(id, logic_x, logic_y, old_x, old_y)
+
+	-- Mover:RemoveHole(SelfMap, logic_x)
+	-- if old_x ~= logic_x then
+	-- 	Mover:RemoveHole(SelfMap, old_x)
+	-- end
 end
 
 function Scene:OnChessSetTemplate(id, template_id)

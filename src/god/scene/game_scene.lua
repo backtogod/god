@@ -334,6 +334,10 @@ function Scene:OnTransformComplete()
 	self.wait_transform_helper = nil
 	Mover:MoveWall(SelfMap)
 	Mover:MoveArmy(SelfMap)
+
+	if not self.wait_move_helper then
+		Event:FireEvent("GAME.END_WATCH")
+	end
 end
 
 function Scene:OnActionStart(round)

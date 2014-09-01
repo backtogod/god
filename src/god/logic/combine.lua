@@ -108,6 +108,7 @@ function CombineMgr:GenerateWall(map, list)
 			return
 		end
 	end
+	Event:FireEvent("COMBINE.WALL")
 end
 
 function CombineMgr:GenerateArmy(map, list, x)
@@ -123,4 +124,5 @@ function CombineMgr:GenerateArmy(map, list, x)
 			return
 		end
 	end
+	Event:FireEvent("COMBINE.ARMY")
 end

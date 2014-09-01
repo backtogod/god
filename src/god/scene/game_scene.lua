@@ -26,6 +26,7 @@ Scene:DeclareListenEvent("PICKHELPER.DROP", "OnDropChess")
 Scene:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
 Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
+Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
 
 function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
@@ -80,6 +81,10 @@ function Scene:InitUI()
 	label_rest_num:setAnchorPoint(cc.p(0, 0.5))
 	-- label_rest_num:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
 	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 10, visible_size.height - 120 , label_rest_num)
+
+	local label_combo = cc.Label:createWithSystemFont("COMBO X", "Arial", 100)
+	label_combo:setVisible(false)
+	Ui:AddElement(ui_frame, "LABEL", "combo", visible_size.width / 2, visible_size.height / 2, label_combo)
 
 	self:DrawGrip()
 
@@ -357,4 +362,30 @@ end
 function Scene:OnGameStateChanged(state)
 	local label = Ui:GetElement(self:GetUI(), "LABEL", "State")
 	label:setString(GameStateMachine.DEBUG_DISPLAY[state] or "UNKNOWN")
+end
+
+function Scene:OnComboChanged(combo_count)
+	if combo_count <= 1 then
+		return
+	end
+
+	local ui_frame = self:GetUI()
+	local label = Ui:GetElement(ui_frame, "LABEL", "combo")
+	if not label then
+		assert(false)
+		return
+	end
+	label:setVisible(true)
+	label:setString(string.format("COMBO %d", combo_count))
+	label:setScale(0.1)
+
+	local scale_to = cc.ScaleTo:create(0.5, 1)
+	local delay = cc.DelayTime:create(1)
+	local call_back = cc.CallFunc:create(
+		function()
+			label:setVisible(false)
+		end
+	)
+	label:stopAllActions()
+	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
 end

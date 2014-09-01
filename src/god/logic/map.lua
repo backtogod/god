@@ -78,7 +78,7 @@ end
 
 function Map:OnChessSetPosition(id, x, y, old_x, old_y)
 	local info = self:GetCellInfo(id)
-	if info then
+	if info and info.x == old_x and info.y == old_y then
 		self:RemoveCell(info.x, info.y)
 	end
 	self:SetCell(x, y, id)
@@ -91,7 +91,10 @@ end
 
 function Map:OnChessRemove(id)
 	local position = self:GetCellInfo(id)
-	self:RemoveCell(position.x, position.y)
+	if self:GetCell(position.x, position.y) == id then
+		self:RemoveCell(position.x, position.y)
+	end
+	self.cell_list[id] = nil
 end
 
 function Map:Debug(is_detail)

@@ -13,6 +13,7 @@ Scene.property = {
 }
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
+Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
@@ -156,6 +157,10 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 	self:MoveChessToPosition(id, chess_sprite, x, y)
 end
 
+function Scene:OnChessRemove(id)
+	self:RemoveObj("main", "chess", id)
+end
+
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 	local config = ChessConfig:GetData(template_id)
 	if not config then
@@ -281,11 +286,13 @@ function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
 end
 
 function Scene:OnMoveComplete()
+
+	self.wait_move_helper:Uninit()
+	self.wait_move_helper = nil
+	CombineMgr:TryMerge(SelfMap)
 	if not self.wait_transform_helper then
 		Event:FireEvent("GAME.END_WATCH")
 	end
-	self.wait_move_helper:Uninit()
-	self.wait_move_helper = nil
 end
 
 function Scene:OnChessChangeState(id, old_state, state)

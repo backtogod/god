@@ -126,3 +126,28 @@ function CombineMgr:GenerateArmy(map, list, x)
 	end
 	Event:FireEvent("COMBINE.ARMY")
 end
+
+function CombineMgr:CanMerge(chess_src, chess_dest)
+	if chess_src and chess_dest and chess_src:TryCall("GetState") ~= chess_dest:TryCall("GetState") then
+		return 0
+	end
+
+	return 1
+end
+
+function CombineMgr:TryMerge(map)
+	for id, info in pairs(map.cell_list) do
+		local x, y = info.x, info.y
+		local map_id = map:GetCell(x, y)
+		if map_id ~= id then
+			local chess_map = map.obj_pool:GetById(map_id)
+			local chess_merged = map.obj_pool:GetById(id)
+			print(x, y, "map: "..map_id, "merged: "..id)
+			self:Merge(map.obj_pool, chess_map, chess_merged)
+		end
+	end
+end
+
+function CombineMgr:Merge(obj_pool, chess_map, chess_merged)
+	obj_pool:Remove(chess_merged:GetId())
+end

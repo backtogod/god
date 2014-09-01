@@ -39,6 +39,12 @@ function GameMgr:Preset()
 end
 
 function GameMgr:_Init()
+
+    Log:Init(Log.LOG_DEBUG, Log.LOG_INFO)
+    
+    -- Debug:AddBlackEvent("GAME_STATE.CHANGE")
+    -- Debug:AddBlackEvent("GAME.ROUND_REST_NUM_CHANGED")
+
     local action_node = ComponentMgr:GetComponent("ACTION")
     for state, allow_state_list in pairs(Def.ALLOW_STATE_RULE) do
         for _, allow_state in ipairs(allow_state_list) do

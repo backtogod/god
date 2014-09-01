@@ -14,14 +14,12 @@ function Mover:RemoveHole(map, x)
 	local index = 1
 	for y = 1, map.height do
 		local chess_id = map:GetCell(x, y)
-		if chess_id >= 0 then
-			local move_chess = map.obj_pool:GetById(chess_id)
-			if move_chess then
-				if y ~= index then
-					move_chess:SetPosition(x, index)
-				end
-				index = index + 1
+		if chess_id > 0 then
+			if y ~= index then
+				map:RemoveCell(x, y)
+				map:SetCell(x, index, chess_id)
 			end
+			index = index + 1
 		end
 	end
 end
@@ -50,6 +48,7 @@ function Mover:MoveWall(map)
 				end
 			end
 		end
+		self:RemoveHole(map, x)
 	end
 	self:CoordinatePosition(map)
 end
@@ -65,18 +64,16 @@ function Mover:MoveArmy(map)
 				end
 			end
 		end
+		self:RemoveHole(map, x)
 	end
 	self:CoordinatePosition(map)
 end
 
 function Mover:CoordinatePosition(map)
-	for x = 1, Def.MAP_WIDTH do
-		for y = 1, Def.MAP_HEIGHT do
-			local chess_id = map:GetCell(x, y)
-			local chess = map.obj_pool:GetById(chess_id)
-			if chess then
-				chess:SetPosition(x, y)
-			end
+	for chess_id, info in pairs(map.cell_list) do
+		local chess = map.obj_pool:GetById(chess_id)
+		if chess then
+			chess:SetPosition(info.x, info.y)
 		end
 	end
 end
@@ -94,13 +91,12 @@ function Mover:CanMoveTo(map, x_src, y_src, x_dest, y_dest)
 
 	local chess_src = map.obj_pool:GetById(id_src)
 	local chess_dest = map.obj_pool:GetById(id_dest)
+	local src_state = chess_src:TryCall("GetState")
 	local dest_state = chess_dest:TryCall("GetState")
-	if dest_state == Def.STATE_WALL then
+	if (dest_state == Def.STATE_WALL and src_state ~= Def.STATE_WALL)
+		or (dest_state == Def.STATE_ARMY and src_state == Def.STATE_NORMAL) then
+
 		return 0
-	elseif dest_state == Def.STATE_ARMY then
-		if chess_src:TryCall("GetState") ~= Def.STATE_WALL then
-			return 0
-		end
 	end
 	return 1
 end
@@ -126,13 +122,18 @@ function Mover:MoveUp(map, x, y, target_y)
 	if id <= 0 then
 		return
 	end
-	local chess = map.obj_pool:GetById(id)
+	
 	map:RemoveCell(x, y)
-	for index = y - 1, target_y, -1 do
-		local move_id = map:GetCell(x, index)
-		local move_chess = map.obj_pool:GetById(move_id)
-		if move_chess then
-			map:SetCell(x, index + 1, move_id)
+	local target_id = map:GetCell(x, target_y)
+	local chess_src = map.obj_pool:GetById(id)
+	local chess_dest = map.obj_pool:GetById(target_id)
+	if CombineMgr:CanMerge(chess_src, chess_dest) ~= 1 then
+		for index = y - 1, target_y, -1 do
+			local move_id = map:GetCell(x, index)
+			local move_chess = map.obj_pool:GetById(move_id)
+			if move_chess then
+				map:SetCell(x, index + 1, move_id)
+			end
 		end
 	end
 	map:SetCell(x, target_y, id)

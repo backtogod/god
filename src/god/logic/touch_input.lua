@@ -25,7 +25,10 @@ function TouchInput:OnTouchBegan(x, y)
 	if GameStateMachine:CanOperate() ~= 1 then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
+	local logic_x, check_y = SelfMap:Pixel2Logic(x, y)
+	if check_y < 1 or check_y > Def.MAP_HEIGHT then
+		return
+	end
 	for logic_y = Def.MAP_HEIGHT, 1, -1 do
 		local chess_id = SelfMap:GetCell(logic_x, logic_y)
 		if chess_id and chess_id > 0 then

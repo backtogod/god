@@ -110,12 +110,17 @@ function Chess:GetWallLevel()
 end
 
 function Chess:Evolution(chess_food)
-	local level = self:GetWallLevel()
-	local food_level = chess_food:GetWallLevel()
-	local final_level = level + food_level
-	if final_level > 3 then
-		final_level = 3
+	local state = self:TryCall("GetState")
+	if state == Def.STATE_WALL then
+		local level = self:GetWallLevel()
+		local food_level = chess_food:GetWallLevel()
+		local final_level = level + food_level
+		if final_level > 3 then
+			final_level = 3
+		end
+		self:SetTemplateId("wall_"..final_level)
+	elseif state == Def.STATE_ARMY then
+		self:ChangeLife(chess_food:GetLife())
 	end
-	self:SetTemplateId("wall_"..final_level)
 	return 1
 end

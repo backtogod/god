@@ -258,7 +258,6 @@ function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
 	if time <= 0 then
 		time = 0.1
 	end
-	print(time + 1)
 	local job_id = waiter:WaitJob(time + 1, func_time_over)	
 	local move_action = cc.MoveTo:create(time, cc.p(x, y))
 	local callback_action = cc.CallFunc:create(

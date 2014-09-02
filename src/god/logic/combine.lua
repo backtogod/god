@@ -22,6 +22,11 @@ function CombineMgr:CheckCombine(map)
 	print("Start Check Map for Combine")
 	map:Debug()
 	self:TryMerge(map)
+	self:CheckCombineForWall(map)	
+	self:CheckCombineForArmy(map)
+end
+
+function CombineMgr:CheckCombineForWall(map)
 	--WALL
 	local wall_list = {}
 	for y = 1, Def.MAP_HEIGHT do
@@ -34,7 +39,7 @@ function CombineMgr:CheckCombine(map)
 				for x = index + 1, Def.MAP_WIDTH do
 					local chess_id = map:GetCell(x, y)
 					local chess = map.obj_pool:GetById(chess_id)
-					local check_result = self:CanCombineWall(check_chess, chess)
+					local check_result = self:CanCombine(check_chess, chess)
 					if check_result <= 0 then
 						index = x
 						if check_result < 0 then
@@ -59,7 +64,52 @@ function CombineMgr:CheckCombine(map)
 	end
 end
 
-function CombineMgr:CanCombineWall(chess_a, chess_b)
+function CombineMgr:CheckCombineForArmy(map)
+	--ARMY
+	local army_list = {}
+	for x = 1, Def.MAP_WIDTH do
+		local start_index = 1
+		local end_index = 1
+		while start_index < Def.MAP_HEIGHT do
+			local check_id = map:GetCell(x, start_index)
+			local check_chess = map.obj_pool:GetById(check_id)
+			if check_chess then
+				local combine_list = {check_id}
+				end_index = start_index + 1
+				while end_index <= Def.MAP_HEIGHT do
+					local chess_id = map:GetCell(x, end_index)
+					local chess = map.obj_pool:GetById(chess_id)
+					local check_result = self:CanCombine(check_chess, chess)
+
+					if check_result <= 0 then
+						start_index = end_index
+						if check_result < 0 then
+							start_index = start_index + 1
+						end
+						break
+					end
+					combine_list[#combine_list + 1] = chess_id
+					if #combine_list >= 3 then
+						table.insert(army_list, combine_list)
+						start_index = end_index + 1
+						break
+					end
+					end_index = end_index + 1
+				end
+				if start_index < end_index then
+					break
+				end
+			else
+				start_index = start_index + 1
+			end
+		end		
+	end
+	for _, combine_list in ipairs(army_list) do
+		self:GenerateArmy(map, combine_list)
+	end
+end
+
+function CombineMgr:CanCombine(chess_a, chess_b)
 	if not chess_a or not chess_b then
 		return -1
 	end
@@ -73,79 +123,6 @@ function CombineMgr:CanCombineWall(chess_a, chess_b)
 	end
 
 	return 1
-end
-
-function CombineMgr:OnChessChangePostion(map, id, x, y)
-	local list_horizontal = self:CheckHorizontalCombine(map, id)
-	if #list_horizontal >= 3 then
-		self:GenerateWall(map, list_horizontal, y)
-		return
-	end
-	local list_vertical = self:CheckVerticalCombine(map, id)
-	if #list_vertical >= 3 then
-		self:GenerateArmy(map, list_vertical, x)
-		return
-	end
-end
-
-function CombineMgr:CheckCanCombine(map, template_id, x, y, combine_list)
-	local check_id = map:GetCell(x, y)
-	if not check_id or check_id <= 0 then
-		return 0
-	end
-	local check_chess = map.obj_pool:GetById(check_id)
-	assert(check_chess)
-	if check_chess:TryCall("GetState") ~= Def.STATE_NORMAL then
-		return 0
-	end
-	if check_chess:GetTemplateId() ~= template_id then
-		return 0
-	end
-	combine_list[#combine_list + 1] = check_id
-	return 1
-end
-
-function CombineMgr:CheckVerticalCombine(map, id)
-	local chess = map.obj_pool:GetById(id)
-	local template_id = chess:GetTemplateId()
-	local combine_list = {id,}
-	local state = chess:TryCall("GetState")
-	if state == Def.STATE_WALL or state == Def.STATE_ARMY then
-		return combine_list
-	end
-
-	for y = chess.y + 1 , SelfMap.height do
-		if self:CheckCanCombine(map, template_id, chess.x, y, combine_list) == 0 then
-			break
-		end
-	end
-	for y = chess.y - 1 , 0, -1 do
-		if self:CheckCanCombine(map, template_id, chess.x, y, combine_list) == 0 then
-			break
-		end
-	end
-	return combine_list
-end
-
-function CombineMgr:CheckHorizontalCombine(map, id)
-	local chess = map.obj_pool:GetById(id)
-	local template_id = chess:GetTemplateId()
-	local combine_list = {id,}
-	local state = chess:TryCall("GetState")
-	if state == Def.STATE_WALL or state == Def.STATE_ARMY then
-		return combine_list
-	end
-	for x = chess.x + 1, SelfMap.width do
-		if self:CheckCanCombine(map, template_id, x, chess.y, combine_list) == 0 then
-			break
-		end
-	end
-	for x = chess.x - 1, 0, -1 do
-		if self:CheckCanCombine(map, template_id, x, chess.y, combine_list) == 0 then
-			break
-		end
-	end
-	return combine_list
 end
 
 function CombineMgr:GenerateWall(map, list)
@@ -181,11 +158,21 @@ function CombineMgr:GenerateArmy(map, list, x)
 end
 
 function CombineMgr:CanMerge(chess_src, chess_dest)
-	if chess_src and chess_dest and chess_src:TryCall("GetState") ~= chess_dest:TryCall("GetState") then
-		return 0
+	if not chess_src or not chess_dest then
+		return 1
+	end
+	local src_state = chess_src:TryCall("GetState")
+	local dest_state = chess_dest:TryCall("GetState")
+	if src_state == Def.STATE_WALL and dest_state == Def.STATE_WALL then
+		return 1
+	end
+	
+	if src_state == Def.STATE_ARMY and dest_state == Def.STATE_ARMY 
+		and chess_src:GetTemplateId() == chess_dest:GetTemplateId() then
+		return 1
 	end
 
-	return 1
+	return 0
 end
 
 function CombineMgr:TryMerge(map)

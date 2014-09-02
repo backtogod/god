@@ -7,12 +7,14 @@
 --=======================================================================
 
 if not Mover then
-	Mover = {}
+	Mover = {
+	 sim_map = Class:New(Map, "SIM_MOVE_MAP")
+}
 end
 
 function Mover:RemoveHole(map, x)
 	local index = 1
-	for y = 1, map.height do
+	for y = 1, Def.MAP_HEIGHT do
 		local chess_id = map:GetCell(x, y)
 		if chess_id > 0 then
 			if y ~= index then
@@ -37,44 +39,45 @@ function Mover:GetMoveablePosition(map, x, judge_fun)
 	return ret_y
 end
 
-function Mover:MoveWall(map)
+function Mover:MoveWallArmy(real_map)
+	local sim_map = self.sim_map
+	sim_map.obj_pool = real_map.obj_pool
+	sim_map.cell_list = Lib:Copy2DTB(real_map.cell_list)
+	sim_map.cell_pool = Lib:Copy2DTB(real_map.cell_pool)
+
 	for x = 1, Def.MAP_WIDTH do
 		for y = 2, Def.MAP_HEIGHT do
-			local check_id = map:GetCell(x, y)
+			local check_id = sim_map:GetCell(x, y)
 			if check_id > 0 then
-				local chess = map.obj_pool:GetById(check_id)
+				local chess = sim_map.obj_pool:GetById(check_id)
 				if chess:TryCall("GetState") == Def.STATE_WALL then
-					self:MoveToTop(map, check_id)
+					self:MoveToTop(sim_map, check_id)
 				end
 			end
 		end
-		self:RemoveHole(map, x)
+		self:RemoveHole(sim_map, x)
 	end
-	self:CoordinatePosition(map)
-end
 
-function Mover:MoveArmy(map)
 	for x = 1, Def.MAP_WIDTH do
 		for y = 2, Def.MAP_HEIGHT do
-			local check_id = map:GetCell(x, y)
+			local check_id = sim_map:GetCell(x, y)
 			if check_id > 0 then
-				local chess = map.obj_pool:GetById(check_id)
+				local chess = sim_map.obj_pool:GetById(check_id)
 				if chess:TryCall("GetState") == Def.STATE_ARMY then
-					self:MoveToTop(map, check_id)
+					self:MoveToTop(sim_map, check_id)
 				end
 			end
 		end
-		self:RemoveHole(map, x)
+		self:RemoveHole(sim_map, x)
 	end
-	self:CoordinatePosition(map)
+	self:CoordinatePosition(sim_map, real_map)
 end
 
-function Mover:CoordinatePosition(map)
-	for chess_id, info in pairs(map.cell_list) do
-		local chess = map.obj_pool:GetById(chess_id)
-		if chess then
-			chess:SetPosition(info.x, info.y)
-		end
+
+function Mover:CoordinatePosition(sim_map, real_map)
+	for chess_id, info in pairs(sim_map.cell_list) do
+		local chess = real_map.obj_pool:GetById(chess_id)
+		SceneMgr:GetCurrentScene():MoveChessToPosition(real_map, chess_id, info.x, info.y)
 	end
 end
 

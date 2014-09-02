@@ -25,7 +25,7 @@ function TouchInput:OnTouchBegan(x, y)
 	if GameStateMachine:CanOperate() ~= 1 then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
+	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
 	for logic_y = Def.MAP_HEIGHT, 1, -1 do
 		local chess_id = SelfMap:GetCell(logic_x, logic_y)
 		if chess_id and chess_id > 0 then
@@ -46,7 +46,7 @@ function TouchInput:OnTouchMoved(x, y)
 	if not id then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
+	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
 	if logic_x == self.last_logic_x then
 		return
 	end
@@ -69,7 +69,7 @@ function TouchInput:OnTouchEnded(x, y)
 	if not id then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2LogicSelf(x, y)
+	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
 	local logic_y = Mover:GetMoveablePosition(SelfMap, logic_x,
 		function(check_chess_id)
 			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then

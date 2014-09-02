@@ -77,12 +77,10 @@ function Map:GetCellInfo(id)
 end
 
 function Map:OnChessSetPosition(id, x, y, old_x, old_y)
-	local info = self:GetCellInfo(id)
-	if info and info.x == old_x and info.y == old_y then
-		self:RemoveCell(info.x, info.y)
+	if self:GetCell(old_x, old_y) == id then
+		self:RemoveCell(old_x, old_y)
 	end
 	self:SetCell(x, y, id)
-	CombineMgr:OnChessChangePostion(self, id, logic_x, logic_y)
 end
 
 function Map:OnChessAdd(id, template_id, x, y)
@@ -104,33 +102,8 @@ function Map:Debug(is_detail)
 	end
 end
 
-function Map:Logic2PixelSelf(logic_x, logic_y)
-	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, -logic_y * Def.MAP_CELL_HEIGHT
-	local offset_x, offset_y = self:GetMapOffsetPoint()
-
-	return real_x + offset_x, real_y + offset_y
-end
-
-function Map:Pixel2LogicSelf(pixel_x, pixel_y)
-	local offset_x, offset_y = self:GetMapOffsetPoint()
-	local real_x, real_y = pixel_x - offset_x, offset_y - pixel_y
-
-	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
-end
-
 function Map:Mirror(x, y)
 	return x, visible_size.height - y
-end
-
-function Map:Logic2PixelEnemy(logic_x, logic_y)
-	local pixel_x, pixel_y = self:Logic2PixelSelf(logic_x, logic_y)
-	local mirro_x, mirror_y = self:Mirror(pixel_x, pixel_y)
-	return mirro_x, mirror_y - Def.MAP_CELL_HEIGHT
-end
-
-function Map:Pixel2LogicEnemy(pixel_x, pixel_y)
-	local real_x, real_y = self:Mirror(pixel_x, pixel_y + Def.MAP_CELL_HEIGHT)
-	return self:Pixel2LogicSelf(real_x, real_y)
 end
 
 function Map:GetMapOffsetPoint()
@@ -139,6 +112,7 @@ function Map:GetMapOffsetPoint()
 
 	return offset_x, offset_y
 end
+
 
 if not SelfMap then
 	SelfMap = Class:New(Map, "SELF_MAP")
@@ -209,6 +183,21 @@ function SelfMap:_Init()
 	return 1
 end
 
+function SelfMap:Logic2Pixel(logic_x, logic_y)
+	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, -logic_y * Def.MAP_CELL_HEIGHT
+	local offset_x, offset_y = self:GetMapOffsetPoint()
+
+	return real_x + offset_x, real_y + offset_y
+end
+
+function SelfMap:Pixel2Logic(pixel_x, pixel_y)
+	local offset_x, offset_y = self:GetMapOffsetPoint()
+	local real_x, real_y = pixel_x - offset_x, offset_y - pixel_y
+
+	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
+end
+
+
 if not EnemyMap then
 	EnemyMap = Class:New(Map, "ENEMY_MAP")
 end
@@ -220,6 +209,7 @@ function EnemyMap:_Uninit()
 
 	return 1
 end
+
 function EnemyMap:_Init()
 	EnemyChessPool:Init("ENEMY_CHESS")
 	self.obj_pool = EnemyChessPool
@@ -229,3 +219,19 @@ function EnemyMap:_Init()
 	return 1
 end
 
+function EnemyMap:Logic2Pixel(logic_x, logic_y)
+	local real_x, real_y = (logic_x - 0.5) * Def.MAP_CELL_WIDTH, -logic_y * Def.MAP_CELL_HEIGHT
+	local offset_x, offset_y = self:GetMapOffsetPoint()
+
+	local mirro_x, mirror_y = self:Mirror(real_x + offset_x, real_y + offset_y)
+	return mirro_x, mirror_y - Def.MAP_CELL_HEIGHT
+end
+
+function EnemyMap:Pixel2Logic(pixel_x, pixel_y)
+	pixel_x, pixel_y = self:Mirror(pixel_x, pixel_y + Def.MAP_CELL_HEIGHT)
+
+	local offset_x, offset_y = self:GetMapOffsetPoint()
+	local real_x, real_y = pixel_x - offset_x, offset_y - pixel_y
+
+	return math.ceil(real_x / Def.MAP_CELL_WIDTH), math.ceil(real_y / Def.MAP_CELL_HEIGHT)
+end

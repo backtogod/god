@@ -130,16 +130,9 @@ function Scene:GenerateChessSprite(image_name)
 	return sprite
 end
 
-function Scene:SetSelfChessPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", "chess", id)
-	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
-	chess:setPosition(x, y)
-	chess:setLocalZOrder(visible_size.height - y)
-end
-
-function Scene:SetEnemyChessPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", "enemy_chess", id)
-	local x, y = Map:Logic2PixelEnemy(logic_x, logic_y)
+function Scene:SetMapChessPosition(map, id, logic_x, logic_y)
+	local chess = self:GetObj("main", map:GetClassName(), id)
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
@@ -151,17 +144,14 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 		return
 	end
 	local chess_sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", "chess", id, chess_sprite)
-	self:SetSelfChessPosition(id, logic_x, Def.MAP_HEIGHT)
-	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
-	self:MoveChessToPosition(id, chess_sprite, x, y)
+	self:AddObj("main", SelfMap:GetClassName(), id, chess_sprite)
+	self:SetMapChessPosition(SelfMap, id, logic_x, Def.MAP_HEIGHT)
+	self:MoveChessToPosition(SelfMap, id, logic_x, logic_y)
 end
 
 function Scene:OnChessRemove(id)
-	local chess_sprite = self:GetObj("main", "chess", id)
-	if chess_sprite:getNumberOfRunningActions() <= 0 then
-		self:RemoveObj("main", "chess", id)
-	end
+	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
+	self:RemoveObj("main", SelfMap:GetClassName(), id)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -171,10 +161,9 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 		return
 	end
 	local chess_sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", "enemy_chess", id, chess_sprite)
-	self:SetEnemyChessPosition(id, logic_x, Def.MAP_HEIGHT)
-	local x, y = Map:Logic2PixelEnemy(logic_x, logic_y)
-	self:MoveChessToPosition(id, chess_sprite, x, y)
+	self:AddObj("main", EnemyMap:GetClassName(), id, chess_sprite)
+	self:SetMapChessPosition(EnemyMap, id, logic_x, Def.MAP_HEIGHT)
+	self:MoveChessToPosition(EnemyMap, id, logic_x, logic_y)
 end
 
 function Scene:OnTouchBegan(x, y)
@@ -190,20 +179,21 @@ function Scene:OnTouchEnded(x, y)
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", "chess", id)
-	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
-	return self:MoveChessToPosition(id, chess, x, y)
+	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
+	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
+	chess:setPosition(x, y)
+	chess:setLocalZOrder(visible_size.height - y)
 end
 
 function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", "chess", id)
-	local x, y = Map:Logic2PixelSelf(logic_x, logic_y)
+	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
+	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
 
 function Scene:OnPickChess(id, logic_x, logic_y)
-	local chess = self:GetObj("main", "chess", id)
+	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
 	chess:setOpacity(200)
 	local copy_chess = cc.Sprite:createWithTexture(chess:getTexture())
 	copy_chess:setAnchorPoint(cc.p(0.5, 0))
@@ -211,30 +201,25 @@ function Scene:OnPickChess(id, logic_x, logic_y)
 	local rect = copy_chess:getBoundingBox()
 	local scale_x = Def.MAP_CELL_WIDTH / rect.width
 	copy_chess:setScale(scale_x)
-	self:AddObj("main", "chess", "copy", copy_chess)
-	self:SetSelfChessPosition("copy", logic_x, logic_y)
+	self:AddObj("main", SelfMap:GetClassName(), "copy", copy_chess)
+	self:SetMapChessPosition(SelfMap, "copy", logic_x, logic_y)
 end
 
 function Scene:OnCancelPickChess(id)
-	local chess = self:GetObj("main", "chess", id)
+	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
 	local logic_chess = ChessPool:GetById(id)
-	self:SetSelfChessPosition(id, logic_chess.x, logic_chess.y)
+	self:SetMapChessPosition(SelfMap, id, logic_chess.x, logic_chess.y)
 	chess:setOpacity(255)
-	self:RemoveObj("main", "chess", "copy")
+	self:RemoveObj("main", SelfMap:GetClassName(), "copy")
 end
 
 function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
-	local chess = self:GetObj("main", "chess", id)
+	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
 	assert(chess)
 	chess:setOpacity(255)
-	self:SetSelfChessPosition(id, logic_x, logic_y)
-	self:RemoveObj("main", "chess", "copy")
-	ActionMgr:OperateChess(id, logic_x, logic_y, old_x, old_y)
-
-	-- Mover:RemoveHole(SelfMap, logic_x)
-	-- if old_x ~= logic_x then
-	-- 	Mover:RemoveHole(SelfMap, old_x)
-	-- end
+	self:SetMapChessPosition(SelfMap, id, logic_x, logic_y)
+	self:RemoveObj("main", SelfMap:GetClassName(), "copy")
+	ActionMgr:OperateChess(SelfMap, id, logic_x, logic_y, old_x, old_y)
 end
 
 function Scene:OnChessSetTemplate(id, template_id)
@@ -243,59 +228,56 @@ function Scene:OnChessSetTemplate(id, template_id)
 		assert(false)
 		return
 	end
-	local old_sprite = self:GetObj("main", "chess", id)
+	local old_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
 	local x, y = old_sprite:getPosition()
-	self:RemoveObj("main", "chess", id)
+	self:RemoveObj("main", SelfMap:GetClassName(), id)
 
 	local sprite = self:GenerateChessSprite(config.image)
 	sprite:setPosition(x, y)
 	sprite:setLocalZOrder(visible_size.height - y)
-	self:AddObj("main", "chess", id, sprite)
+	self:AddObj("main", SelfMap:GetClassName(), id, sprite)
 end
 
-function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
-	local start_x, start_y = chess_sprite:getPosition()
-	local time = math.abs(y - start_y) / 1000
-	if time == 0 then
-		return
-	end
+function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
+	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	if not self.wait_move_helper then
 		self.wait_move_helper = Class:New(WaitHelper, "Waiter")
 		if GameStateMachine:IsWatching() ~= 1 then
 			Event:FireEvent("GAME.START_WATCH")
 		end
-		self.wait_move_helper:Init({self.OnMoveComplete, self})
+		self.wait_move_helper:Init({self.OnMoveComplete, self, map})
 	end
 	chess_sprite:setLocalZOrder(visible_size.height - y)
 	local waiter = self.wait_move_helper
 	local function func_time_over(id)
 		chess_sprite:setPosition(x, y)
 	end
-	local job_id = waiter:WaitJob(10, func_time_over)
 	local start_x, start_y = chess_sprite:getPosition()
-	local time = math.abs(y - start_y) / 1000
-	if time == 0 then
-		waiter:JobComplete(job_id)
-		return
+	local time = math.abs(y - start_y) / Def.CHESS_MOVE_SPEED
+	if time <= 0 then
+		time = 0.1
 	end
+	print(time + 1)
+	local job_id = waiter:WaitJob(time + 1, func_time_over)	
 	local move_action = cc.MoveTo:create(time, cc.p(x, y))
 	local callback_action = cc.CallFunc:create(
 		function()
-			waiter:JobComplete(job_id)
-			if not ChessPool:GetById(chess_id) then
-				self:RemoveObj("main", "chess", chess_id)
+			local logic_chess = map.obj_pool:GetById(chess_id)
+			if logic_chess then
+				logic_chess:SetPosition(logic_x, logic_y)
 			end
+			waiter:JobComplete(job_id)
 		end
 	)
 	local delay_action = cc.DelayTime:create(0.2)
 	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action, delay_action))
 end
 
-function Scene:OnMoveComplete()
-
+function Scene:OnMoveComplete(map)
 	self.wait_move_helper:Uninit()
 	self.wait_move_helper = nil
-	CombineMgr:TryMerge(SelfMap)
+	CombineMgr:CheckCombine(map)
 	if not self.wait_transform_helper then
 		Event:FireEvent("GAME.END_WATCH")
 	end
@@ -303,7 +285,7 @@ end
 
 function Scene:OnChessChangeState(id, old_state, state)
 	local transform = nil
-	local chess_sprite = self:GetObj("main", "chess", id)
+	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
 	if state == Def.STATE_WALL then
 		--TODO wall template get
 		local config = ChessConfig:GetData("wall_1")
@@ -330,9 +312,9 @@ function Scene:OnChessChangeState(id, old_state, state)
 	end
 
 	local waiter = self.wait_transform_helper
-	local job_id = waiter:WaitJob(2, transform)
+	local job_id = waiter:WaitJob(Def.TRANSPORT_TIME + 1, transform)
 
-	local blink_action = cc.Blink:create(0.5, 5)
+	local blink_action = cc.Blink:create(Def.TRANSPORT_TIME, 5)
 	local callback_action = cc.CallFunc:create(
 		function()
 			transform()
@@ -346,8 +328,7 @@ end
 function Scene:OnTransformComplete()
 	self.wait_transform_helper:Uninit()
 	self.wait_transform_helper = nil
-	Mover:MoveWall(SelfMap)
-	Mover:MoveArmy(SelfMap)
+	Mover:MoveWallArmy(SelfMap)
 
 	if not self.wait_move_helper then
 		Event:FireEvent("GAME.END_WATCH")

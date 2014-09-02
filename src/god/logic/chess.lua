@@ -70,6 +70,15 @@ function Chess:SetPosition(x, y)
 	Event:FireEvent(event_name, self:GetId(), x, y, old_x, old_y)
 end
 
+function Chess:MoveTo(x, y)
+	if self.x == x and self.y == y then
+		return
+	end
+	SceneMgr:GetCurrentScene():MoveChess(map, id, logic_x, logic_y)
+	local event_name = self:GetClassName() .. ".MOVE_TO"
+	Event:FireEvent(event_name, self:GetId(), x, y, self.x, self.y)
+end
+
 function Chess:SetTemplateId(template_id)
 	self.template_id = template_id
 	local data = ChessConfig:GetData(template_id)
@@ -91,11 +100,22 @@ function Chess:TransformtToWall()
 	return 1
 end
 
-function Chess:Evolution()
+function Chess:GetWallLevel()
 	if self.template_id == "wall_1" then
-		self:SetTemplateId("wall_2")
+		return 1
 	elseif self.template_id == "wall_2" then
-		self:SetTemplateId("wall_3")
+		return 2
 	end
+	return 0
+end
+
+function Chess:Evolution(chess_food)
+	local level = self:GetWallLevel()
+	local food_level = chess_food:GetWallLevel()
+	local final_level = level + food_level
+	if final_level > 3 then
+		final_level = 3
+	end
+	self:SetTemplateId("wall_"..final_level)
 	return 1
 end

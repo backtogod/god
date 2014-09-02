@@ -18,8 +18,61 @@ function CombineMgr:_Uninit( ... )
 	-- body
 end
 
-function CombineMgr:CheckCombine(id)
-	-- body
+function CombineMgr:CheckCombine(map)
+	print("Start Check Map for Combine")
+	map:Debug()
+	self:TryMerge(map)
+	--WALL
+	local wall_list = {}
+	for y = 1, Def.MAP_HEIGHT do
+		local index = 1		
+		while index < Def.MAP_WIDTH do
+			local check_id = map:GetCell(index, y)
+			local check_chess = map.obj_pool:GetById(check_id)
+			if check_chess then
+				local combine_list = {check_id}
+				for x = index + 1, Def.MAP_WIDTH do
+					local chess_id = map:GetCell(x, y)
+					local chess = map.obj_pool:GetById(chess_id)
+					local check_result = self:CanCombineWall(check_chess, chess)
+					if check_result <= 0 then
+						index = x
+						if check_result < 0 then
+							index = index + 1
+						end
+						break
+					end
+					combine_list[#combine_list + 1] = chess_id
+					if #combine_list >= 3 then
+						table.insert(wall_list, combine_list)
+						index = x + 1
+						break
+					end
+				end
+			else
+				index = index + 1
+			end
+		end		
+	end
+	for _, combine_list in ipairs(wall_list) do
+		self:GenerateWall(map, combine_list)
+	end
+end
+
+function CombineMgr:CanCombineWall(chess_a, chess_b)
+	if not chess_a or not chess_b then
+		return -1
+	end
+
+	if chess_a:TryCall("GetState") ~= Def.STATE_NORMAL or chess_b:TryCall("GetState") ~= Def.STATE_NORMAL then
+		return -1
+	end
+
+	if chess_a:GetTemplateId() ~= chess_b:GetTemplateId() then
+		return 0
+	end
+
+	return 1
 end
 
 function CombineMgr:OnChessChangePostion(map, id, x, y)
@@ -36,7 +89,7 @@ function CombineMgr:OnChessChangePostion(map, id, x, y)
 end
 
 function CombineMgr:CheckCanCombine(map, template_id, x, y, combine_list)
-	local check_id = SelfMap:GetCell(x, y)
+	local check_id = map:GetCell(x, y)
 	if not check_id or check_id <= 0 then
 		return 0
 	end
@@ -142,13 +195,15 @@ function CombineMgr:TryMerge(map)
 		if map_id ~= id then
 			local chess_map = map.obj_pool:GetById(map_id)
 			local chess_merged = map.obj_pool:GetById(id)
-			print(x, y, "map: "..map_id, "merged: "..id)
-			self:Merge(map.obj_pool, chess_map, chess_merged)
+			if self:CanMerge(chess_map, chess_merged) == 1 then
+				print(x, y, "map: "..map_id, "merged: "..id)
+				self:Merge(map, chess_map, chess_merged)
+			end
 		end
 	end
 end
 
-function CombineMgr:Merge(obj_pool, chess_map, chess_merged)
-	chess_map:Evolution()
-	obj_pool:Remove(chess_merged:GetId())
+function CombineMgr:Merge(map, chess_map, chess_merged, x, y)
+	chess_map:Evolution(chess_merged)
+	map.obj_pool:Remove(chess_merged:GetId())
 end

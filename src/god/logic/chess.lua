@@ -27,8 +27,35 @@ function Chess:_Init(id, template_id, x, y)
 	self.x = x
 	self.y = y
 
+	local data = ChessConfig:GetData(template_id)
+	self.life = data.base_life
+	self.max_life = data.base_life
 	self:AddComponent("action", "ACTION")
 	return 1
+end
+
+function Chess:GetLife()
+	return self.life
+end
+
+function Chess:GetMaxLife()
+	return self.max_life
+end
+
+function Chess:SetLife(life)
+	self.life = life
+	local event_name = self:GetClassName() .. ".LIFE_CHANGED"
+	Event:FireEvent(event_name, self:GetId(), life)
+end
+
+function Chess:ChangeLife(change_value)
+	local new_value = self.life + change_value
+	if new_value > self.max_life then
+		new_value = self.max_life
+	elseif new_value <= 0 then
+		new_value = 0
+	end
+	self:SetLife(new_value)
 end
 
 function Chess:SetPosition(x, y)
@@ -45,10 +72,30 @@ end
 
 function Chess:SetTemplateId(template_id)
 	self.template_id = template_id
+	local data = ChessConfig:GetData(template_id)
+	self.max_life = data.base_life
+	self:SetLife(data.base_life)
 	local event_name = self:GetClassName() .. ".SET_TEMPLATE"
 	Event:FireEvent(event_name, self:GetId(), template_id)
 end
 
 function Chess:GetTemplateId()
 	return self.template_id
+end
+
+function Chess:TransformtToWall()
+	if self:TryCall("SetState", Def.STATE_WALL) ~= 1 then
+		return 0
+	end
+	
+	return 1
+end
+
+function Chess:Evolution()
+	if self.template_id == "wall_1" then
+		self:SetTemplateId("wall_2")
+	elseif self.template_id == "wall_2" then
+		self:SetTemplateId("wall_3")
+	end
+	return 1
 end

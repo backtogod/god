@@ -103,7 +103,7 @@ function CombineMgr:GenerateWall(map, list)
 
 	for _, check_id in ipairs(list) do
 		local chess = map.obj_pool:GetById(check_id)
-		if chess:TryCall("SetState", Def.STATE_WALL) ~= 1 then
+		if chess:TransformtToWall() ~= 1 then
 			assert(false)
 			return
 		end
@@ -149,5 +149,6 @@ function CombineMgr:TryMerge(map)
 end
 
 function CombineMgr:Merge(obj_pool, chess_map, chess_merged)
+	chess_map:Evolution()
 	obj_pool:Remove(chess_merged:GetId())
 end

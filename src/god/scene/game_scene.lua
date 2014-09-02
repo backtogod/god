@@ -158,7 +158,10 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 end
 
 function Scene:OnChessRemove(id)
-	self:RemoveObj("main", "chess", id)
+	local chess_sprite = self:GetObj("main", "chess", id)
+	if chess_sprite:getNumberOfRunningActions() <= 0 then
+		self:RemoveObj("main", "chess", id)
+	end
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -268,7 +271,7 @@ function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
 	local function func_time_over(id)
 		chess_sprite:setPosition(x, y)
 	end
-	local job_id = waiter:WaitJob(2, func_time_over)
+	local job_id = waiter:WaitJob(10, func_time_over)
 	local start_x, start_y = chess_sprite:getPosition()
 	local time = math.abs(y - start_y) / 1000
 	if time == 0 then
@@ -279,6 +282,9 @@ function Scene:MoveChessToPosition(chess_id, chess_sprite, x, y)
 	local callback_action = cc.CallFunc:create(
 		function()
 			waiter:JobComplete(job_id)
+			if not ChessPool:GetById(chess_id) then
+				self:RemoveObj("main", "chess", chess_id)
+			end
 		end
 	)
 	local delay_action = cc.DelayTime:create(0.2)
@@ -299,19 +305,15 @@ function Scene:OnChessChangeState(id, old_state, state)
 	local transform = nil
 	local chess_sprite = self:GetObj("main", "chess", id)
 	if state == Def.STATE_WALL then
-		local config = ChessConfig:GetData("wall")
+		--TODO wall template get
+		local config = ChessConfig:GetData("wall_1")
 		if not config then
 			assert(false)
 			return
 		end
 		transform = function()
-			self:RemoveObj("main", "chess", id)
 			local logic_chess = ChessPool:GetById(id)
-			local x, y = Map:Logic2PixelSelf(logic_chess.x, logic_chess.y)
-			local sprite = self:GenerateChessSprite(config.image)
-			sprite:setPosition(x, y)
-			sprite:setLocalZOrder(visible_size.height - y)
-			self:AddObj("main", "chess", id, sprite)
+			logic_chess:SetTemplateId("wall_1")
 		end
 	elseif state == Def.STATE_ARMY then
 		transform = function()

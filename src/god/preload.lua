@@ -5,12 +5,13 @@ AddProjectScript("define.lua")
 AddProjectScript("model/base/map.lua")
 AddProjectScript("model/base/chess.lua")
 
-AddProjectScript("model/module/combine.lua")
+AddProjectScript("model/rule/combine.lua")
+
 AddProjectScript("model/module/game_state_machine.lua")
 AddProjectScript("model/module/action_mgr.lua")
 AddProjectScript("model/module/chess_spawner.lua")
-
-AddProjectScript("model/rule/mover.lua")
+AddProjectScript("model/module/mover.lua")
+AddProjectScript("model/module/command_center.lua")
 
 AddProjectScript("model/ai/robot.lua")
 

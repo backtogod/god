@@ -42,6 +42,8 @@ function Scene:_Uninit( ... )
 	SelfMap:Uninit()
 	PickHelper:Uninit()
 	GameStateMachine:Uninit()
+	CommandCenter:Uninit()
+	Mover:Uninit()
 	TouchInput:Uninit()
 
 	return 1
@@ -49,6 +51,8 @@ end
 
 function Scene:_Init()
 	assert(self:InitUI() == 1)
+	assert(Mover:Init() == 1)
+	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)

@@ -29,18 +29,11 @@ function TouchInput:OnTouchBegan(x, y)
 	if check_y < 1 or check_y > Def.MAP_HEIGHT then
 		return
 	end
-	for logic_y = Def.MAP_HEIGHT, 1, -1 do
-		local chess_id = SelfMap:GetCell(logic_x, logic_y)
-		if chess_id and chess_id > 0 then
-			local logic_chess = ChessPool:GetById(chess_id)
-			if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
-				PickHelper:Pick(chess_id, logic_x, logic_y)
-				self.pick_id = chess_id
-				self.last_logic_x = logic_x
-				self.pick_logic_x = logic_x
-			end
-			return
-		end
+	local ret_code, result = CommandCenter:ReceiveCommand({"PickChess", logic_x})
+	if ret_code and result then
+		self.pick_id = result
+		self.last_logic_x = logic_x
+		self.pick_logic_x = logic_x
 	end
 end
 
@@ -54,17 +47,8 @@ function TouchInput:OnTouchMoved(x, y)
 		return
 	end
 	self.last_logic_x = logic_x
-	local logic_y = Mover:GetMoveablePosition(SelfMap, logic_x, 
-		function(check_chess_id)
-			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
-				return 1
-			end
-			return 0
-		end
-	)
-	if logic_y > 0 then
-		Event:FireEvent("CHESS.SET_DISPLAY_POSITION", id, logic_x, logic_y)
-	end
+
+	local ret_code, result = CommandCenter:ReceiveCommand({"TryMovePickChess", id, logic_x})
 end
 
 function TouchInput:OnTouchEnded(x, y)
@@ -73,18 +57,15 @@ function TouchInput:OnTouchEnded(x, y)
 		return
 	end
 	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
-	local logic_y = Mover:GetMoveablePosition(SelfMap, logic_x,
-		function(check_chess_id)
-			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
-				return 1
-			end
-			return 0
+	local is_success = 0
+	if self.pick_logic_x ~= logic_x then
+		local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", id, logic_x})
+		if ret_code and result == 1 then
+			is_success = 1
 		end
-	)
-	if logic_y > 0 and self.pick_logic_x ~= logic_x then
-		PickHelper:DropAll(logic_x, logic_y)
-	else
-		PickHelper:CancelAll()
+	end
+	if is_success == 0 then
+		local ret_code, result = CommandCenter:ReceiveCommand({"CancelPickChess", id})
 	end
 	self.pick_id = nil
 	self.last_logic_x = nil

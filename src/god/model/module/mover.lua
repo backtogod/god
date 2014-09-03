@@ -7,9 +7,17 @@
 --=======================================================================
 
 if not Mover then
-	Mover = {
-	 sim_map = Class:New(Map, "SIM_MOVE_MAP")
-}
+	Mover = ModuleMgr:NewModule("MOVE_HELPER")
+end
+
+function Mover:_Uninit( ... )
+	-- body
+	return 1
+end
+
+function Mover:_Init( ... )
+	self.sim_map = Class:New(Map, "SIM_MOVE_MAP")
+	return 1
 end
 
 function Mover:RemoveHole(map, x)

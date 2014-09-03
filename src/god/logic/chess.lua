@@ -74,7 +74,6 @@ function Chess:MoveTo(x, y)
 	if self.x == x and self.y == y then
 		return
 	end
-	SceneMgr:GetCurrentScene():MoveChess(map, id, logic_x, logic_y)
 	local event_name = self:GetClassName() .. ".MOVE_TO"
 	Event:FireEvent(event_name, self:GetId(), x, y, self.x, self.y)
 end

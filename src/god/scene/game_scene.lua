@@ -16,9 +16,16 @@ Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
+Scene:DeclareListenEvent("CHESS.MOVE_TO", "OnChessMove")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
 Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
+
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
+Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
+Scene:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnEnemyChessSetPosition")
+Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDisplayPosition")
+Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
+Scene:DeclareListenEvent("ENEMY_CHESS.CHANGE_STATE", "OnEnemyChessChangeState")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
@@ -139,6 +146,18 @@ function Scene:SetMapChessPosition(map, id, logic_x, logic_y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
 
+function Scene:OnTouchBegan(x, y)
+	return TouchInput:OnTouchBegan(x, y)
+end
+
+function Scene:OnTouchMoved(x, y)
+	return TouchInput:OnTouchMoved(x, y)
+end
+
+function Scene:OnTouchEnded(x, y)
+	return TouchInput:OnTouchEnded(x, y)
+end
+
 function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 	local config = ChessConfig:GetData(template_id)
 	if not config then
@@ -149,11 +168,6 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 	self:AddObj("main", SelfMap:GetClassName(), id, chess_sprite)
 	self:SetMapChessPosition(SelfMap, id, logic_x, Def.MAP_HEIGHT)
 	self:MoveChessToPosition(SelfMap, id, logic_x, logic_y)
-end
-
-function Scene:OnChessRemove(id)
-	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	self:RemoveObj("main", SelfMap:GetClassName(), id)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -168,21 +182,26 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 	self:MoveChessToPosition(EnemyMap, id, logic_x, logic_y)
 end
 
-function Scene:OnTouchBegan(x, y)
-	return TouchInput:OnTouchBegan(x, y)
+function Scene:OnChessRemove(id)
+	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
+	self:RemoveObj("main", SelfMap:GetClassName(), id)
 end
 
-function Scene:OnTouchMoved(x, y)
-	return TouchInput:OnTouchMoved(x, y)
-end
-
-function Scene:OnTouchEnded(x, y)
-	return TouchInput:OnTouchEnded(x, y)
+function Scene:OnEnemyChessRemove(id)
+	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
+	self:RemoveObj("main", EnemyMap:GetClassName(), id)
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
 	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
 	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
+	chess:setPosition(x, y)
+	chess:setLocalZOrder(visible_size.height - y)
+end
+
+function Scene:OnEnemyChessSetPosition(id, logic_x, logic_y)
+	local chess = self:GetObj("main", EnemyMap:GetClassName(), id)
+	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
@@ -194,34 +213,11 @@ function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
 
-function Scene:OnPickChess(id, logic_x, logic_y)
-	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
-	chess:setOpacity(200)
-	local copy_chess = cc.Sprite:createWithTexture(chess:getTexture())
-	copy_chess:setAnchorPoint(cc.p(0.5, 0))
-	copy_chess:setOpacity(100)
-	local rect = copy_chess:getBoundingBox()
-	local scale_x = Def.MAP_CELL_WIDTH / rect.width
-	copy_chess:setScale(scale_x)
-	self:AddObj("main", SelfMap:GetClassName(), "copy", copy_chess)
-	self:SetMapChessPosition(SelfMap, "copy", logic_x, logic_y)
-end
-
-function Scene:OnCancelPickChess(id)
-	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
-	local logic_chess = ChessPool:GetById(id)
-	self:SetMapChessPosition(SelfMap, id, logic_chess.x, logic_chess.y)
-	chess:setOpacity(255)
-	self:RemoveObj("main", SelfMap:GetClassName(), "copy")
-end
-
-function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
-	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
-	assert(chess)
-	chess:setOpacity(255)
-	self:SetMapChessPosition(SelfMap, id, logic_x, logic_y)
-	self:RemoveObj("main", SelfMap:GetClassName(), "copy")
-	ActionMgr:OperateChess(SelfMap, id, logic_x, logic_y, old_x, old_y)
+function Scene:OnEnemyChessSetDisplayPosition(id, logic_x, logic_y)
+	local chess = self:GetObj("main", EnemyMap:GetClassName(), id)
+	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
+	chess:setPosition(x, y)
+	chess:setLocalZOrder(visible_size.height - y)
 end
 
 function Scene:OnChessSetTemplate(id, template_id)
@@ -238,6 +234,59 @@ function Scene:OnChessSetTemplate(id, template_id)
 	sprite:setPosition(x, y)
 	sprite:setLocalZOrder(visible_size.height - y)
 	self:AddObj("main", SelfMap:GetClassName(), id, sprite)
+end
+
+function Scene:OnEnemyChessSetTemplate(id, template_id)
+	local config = ChessConfig:GetData(template_id)
+	if not config then
+		assert(false)
+		return
+	end
+	local old_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
+	local x, y = old_sprite:getPosition()
+	self:RemoveObj("main", EnemyMap:GetClassName(), id)
+
+	local sprite = self:GenerateChessSprite(config.image)
+	sprite:setPosition(x, y)
+	sprite:setLocalZOrder(visible_size.height - y)
+	self:AddObj("main", EnemyMap:GetClassName(), id, sprite)
+end
+
+function Scene:OnPickChess(id, logic_x, logic_y)
+	local map = GameStateMachine:GetActiveMap()
+	local chess = self:GetObj("main", map:GetClassName(), id)
+	chess:setOpacity(200)
+	local copy_chess = cc.Sprite:createWithTexture(chess:getTexture())
+	copy_chess:setAnchorPoint(cc.p(0.5, 0))
+	copy_chess:setOpacity(100)
+	local rect = copy_chess:getBoundingBox()
+	local scale_x = Def.MAP_CELL_WIDTH / rect.width
+	copy_chess:setScale(scale_x)
+	self:AddObj("main", map:GetClassName(), "copy", copy_chess)
+	self:SetMapChessPosition(map, "copy", logic_x, logic_y)
+end
+
+function Scene:OnCancelPickChess(id)
+	local map = GameStateMachine:GetActiveMap()
+	local chess = self:GetObj("main", map:GetClassName(), id)
+	local logic_chess = ChessPool:GetById(id)
+	self:SetMapChessPosition(map, id, logic_chess.x, logic_chess.y)
+	chess:setOpacity(255)
+	self:RemoveObj("main", map:GetClassName(), "copy")
+end
+
+function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
+	local map = GameStateMachine:GetActiveMap()
+	local chess = self:GetObj("main", map:GetClassName(), id)
+	assert(chess)
+	chess:setOpacity(255)
+	self:SetMapChessPosition(map, id, logic_x, logic_y)
+	self:RemoveObj("main", map:GetClassName(), "copy")
+	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
+end
+
+function Scene:OnChessMove(chess_id, logic_x, logic_y)
+	return self:MoveChessToPosition(SelfMap, chess_id, logic_x, logic_y)
 end
 
 function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
@@ -285,8 +334,17 @@ function Scene:OnMoveComplete(map)
 end
 
 function Scene:OnChessChangeState(id, old_state, state)
+	return self:ChangeChessState(SelfMap, id, state)
+end
+
+
+function Scene:OnEnemyChessChangeState(id, old_state, state)
+	return self:ChangeChessState(EnemyMap, id, state)
+end
+
+function Scene:ChangeChessState(map, id, state)
 	local transform = nil
-	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
 	if state == Def.STATE_WALL then
 		--TODO wall template get
 		local config = ChessConfig:GetData("wall_1")
@@ -295,7 +353,7 @@ function Scene:OnChessChangeState(id, old_state, state)
 			return
 		end
 		transform = function()
-			local logic_chess = ChessPool:GetById(id)
+			local logic_chess = map.obj_pool:GetById(id)
 			logic_chess:SetTemplateId("wall_1")
 		end
 	elseif state == Def.STATE_ARMY then
@@ -309,7 +367,7 @@ function Scene:OnChessChangeState(id, old_state, state)
 		if GameStateMachine:IsWatching() ~= 1 then
 			Event:FireEvent("GAME.START_WATCH")
 		end
-		self.wait_transform_helper:Init({self.OnTransformComplete, self})
+		self.wait_transform_helper:Init({self.OnTransformComplete, self, map})
 	end
 
 	local waiter = self.wait_transform_helper
@@ -326,10 +384,10 @@ function Scene:OnChessChangeState(id, old_state, state)
 	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
 end
 
-function Scene:OnTransformComplete()
+function Scene:OnTransformComplete(map)
 	self.wait_transform_helper:Uninit()
 	self.wait_transform_helper = nil
-	Mover:MoveWallArmy(SelfMap)
+	Mover:MoveWallArmy(map)
 
 	if not self.wait_move_helper then
 		Event:FireEvent("GAME.END_WATCH")

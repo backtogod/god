@@ -103,3 +103,11 @@ function GameStateMachine:OnActionOver()
 		self:SetState(self.STATE_ENEMY_OPERATE)
 	end
 end
+
+function GameStateMachine:GetActiveMap()
+	if self:IsInSelfAction() == 1 then
+		return SelfMap
+	elseif self:IsInEnemyAction() == 1 then
+		return EnemyMap
+	end
+end

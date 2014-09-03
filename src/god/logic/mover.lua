@@ -77,7 +77,7 @@ end
 function Mover:CoordinatePosition(sim_map, real_map)
 	for chess_id, info in pairs(sim_map.cell_list) do
 		local chess = real_map.obj_pool:GetById(chess_id)
-		SceneMgr:GetCurrentScene():MoveChessToPosition(real_map, chess_id, info.x, info.y)
+		chess:MoveTo(info.x, info.y)
 	end
 end
 

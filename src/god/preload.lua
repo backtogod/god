@@ -1,18 +1,26 @@
 --Sample
 AddProjectScript("define.lua")
 
-AddProjectScript("logic/map.lua")
-AddProjectScript("logic/chess.lua")
-AddProjectScript("logic/combine.lua")
-AddProjectScript("logic/mover.lua")
-AddProjectScript("logic/touch_input.lua")
-AddProjectScript("logic/game_state_machine.lua")
-AddProjectScript("logic/action_mgr.lua")
-AddProjectScript("logic/chess_spawner.lua")
-AddProjectScript("logic/robot.lua")
+--Load Model Script
+AddProjectScript("model/base/map.lua")
+AddProjectScript("model/base/chess.lua")
 
-AddProjectScript("scene/sample_scene.lua")
-AddProjectScript("scene/game_scene.lua")
+AddProjectScript("model/module/combine.lua")
+AddProjectScript("model/module/game_state_machine.lua")
+AddProjectScript("model/module/action_mgr.lua")
+AddProjectScript("model/module/chess_spawner.lua")
 
+AddProjectScript("model/rule/mover.lua")
+
+AddProjectScript("model/ai/robot.lua")
+
+--Load Controller Script
+AddProjectScript("controller/touch_input.lua")
+
+--Load View Script
+AddProjectScript("view/scene/sample_scene.lua")
+AddProjectScript("view/scene/game_scene.lua")
+
+--Load Game Config
 AddProjectScript("config/chess_config.lua")
 

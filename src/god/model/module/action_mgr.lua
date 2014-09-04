@@ -44,7 +44,10 @@ function ActionMgr:SetRestRoundNum(num)
 end
 
 function ActionMgr:ChangeRestRoundNum(change_value)
-	return self:SetRestRoundNum(self.rest_round_num + change_value)
+	self:SetRestRoundNum(self.rest_round_num + change_value)
+	if self:GetRestRoundNum() <= 0 and GameStateMachine:IsWatching() ~= 1 then
+		self:NextRound()
+	end
 end
 
 function ActionMgr:GetRestRoundNum()
@@ -52,16 +55,12 @@ function ActionMgr:GetRestRoundNum()
 end
 
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
-	self:ChangeRestRoundNum(-1)
 	self.combo_count = 0
 	local logic_chess = map.obj_pool:GetById(id)
 	assert(logic_chess)
 	logic_chess:SetPosition(logic_x, logic_y)
 	CombineMgr:CheckCombine(map)
-	
-	if self:GetRestRoundNum() <= 0 and GameStateMachine:IsWatching() ~= 1 then
-		self:NextRound()
-	end
+	self:ChangeRestRoundNum(-1)
 end
 
 function ActionMgr:OnEndWatch()
@@ -74,9 +73,11 @@ end
 
 function ActionMgr:NextRound()
 	Event:FireEvent("GAME.ACTION_OVER")
+	GameStateMachine:OnActionOver()
 
 	self.combo_count = 0
 	self.rest_round_num = self.raw_round_num
 	self.round_count = self.round_count + 1
+	GameStateMachine:OnActionStart()
 	Event:FireEvent("GAME.ACTION_START", self.round_count)
 end

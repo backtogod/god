@@ -29,9 +29,9 @@ function TouchInput:OnTouchBegan(x, y)
 	if check_y < 1 or check_y > Def.MAP_HEIGHT then
 		return
 	end
-	local ret_code, result = CommandCenter:ReceiveCommand({"PickChess", logic_x})
-	if ret_code and result then
-		self.pick_id = result
+	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", logic_x})
+	if ret_code and pick_id then
+		self.pick_id = pick_id
 		self.last_logic_x = logic_x
 		self.pick_logic_x = logic_x
 	end

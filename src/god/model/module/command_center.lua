@@ -27,9 +27,11 @@ end
 
 function CommandCenter:ReceiveCommand(command)
 	local state = GameStateMachine:GetState()
-	self:Log(Log.LOG_INFO, "ReceiveCommand [%s] command(%s %s %s %s %s)",
+	self:Log(Log.LOG_DEBUG, "ReceiveCommand [%s] command(%s %s %s %s %s)",
 		GameStateMachine.DEBUG_DISPLAY[state], command[1], tostring(command[2]), tostring(command[3]), tostring(command[4]), tostring(command[5]))
-	return Lib:SafeCall({self.ExecuteCommand, self, state, command})
+	local ret_code, result = Lib:SafeCall({self.ExecuteCommand, self, state, command})
+	Event:FireEvent("COMMAND.EXECUTE_COMPLETE", command[1], ret_code)
+	return ret_code, result
 end
 
 function CommandCenter:ExecuteCommand(state, command)
@@ -94,14 +96,16 @@ function CommandCenter:_TryDropChess(map, id, logic_x)
 	return 1
 end
 
-function CommandCenter:_SpawnChess( ... )
+function CommandCenter:_SpawnChess(map, id_list)
+	ChessSpawner:SpawnChess(map, id_list)
+	ActionMgr:ChangeRestRoundNum(-1)	
+end
+function CommandCenter:_UseSkill(map)
 	-- body
 end
-function CommandCenter:_UseSkill( ... )
-	-- body
-end
-function CommandCenter:_EndAction( ... )
-	-- body
+function CommandCenter:_EndAction(map)
+	--TODO 
+	ActionMgr:NextRound()
 end
 
 CommandCenter.COMMAND_LIST = {

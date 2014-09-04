@@ -113,6 +113,19 @@ function Map:GetMapOffsetPoint()
 	return offset_x, offset_y
 end
 
+function Map:InitChess(max_wave, spec_list)
+	if not spec_list then
+		spec_list = {}
+	end
+	local delay_frame = 0
+	local add_frame = max_wave
+	for wave = 1, max_wave do
+		delay_frame = delay_frame + add_frame
+		add_frame = add_frame - 1
+		self:RegistLogicTimer(delay_frame, {ChessSpawner.SpawnChess, ChessSpawner, self, spec_list[wave]})		
+	end
+end
+
 
 if not SelfMap then
 	SelfMap = Class:New(Map, "SELF_MAP")
@@ -130,55 +143,28 @@ function SelfMap:_Init()
 	ChessPool:Init("CHESS")
 	self.obj_pool = ChessPool
 
-	-- local random_list = {}
-	-- local max_wave = 0
-	-- for i = 1, 14 do
-	-- 	local n = math.random(1, 6)
-	-- 	if not random_list[n] then
-	-- 		random_list[n] = {}
-	-- 	end
-	-- 	table.insert(random_list[n], 1)
-	-- 	if #random_list[n] > max_wave then
-	-- 		max_wave = #random_list[n]
-	-- 	end
-	-- end
-	-- local function wave(wave_count, count)
-	-- 	for i = 1, count do
-	-- 		ChessPool:Add(Chess, math.random(1, 6), math.random(1, 6), 6)
-	-- 	end
+	local spec_list = {
+		{2,2,1,4,4,},
+		{1,1,2,6,6,4},
+		{3,2,3,3,2,6},
+	}
+	self:InitChess(3, spec_list)
+
+	-- local function wave_1()
+	-- 	ChessSpawner:SpawnChess(self, {2,2,1,4,4,})
 	-- end
 
-	-- local delay_frame = 0
-	-- local add_frame = 5
-	-- for i = 1, max_wave do
-	-- 	delay_frame = delay_frame + add_frame
-	-- 	add_frame = add_frame - 1
-	-- 	local count = 0
-	-- 	for j = 1, 6 do
-	-- 		if random_list[j] and #random_list[j] > 0 then
-	-- 			table.remove(random_list[j], #random_list[j])
-	-- 			count = count + 1
-	-- 		end
-	-- 	end
-	-- 	self:RegistLogicTimer(delay_frame, {wave, i, count})
-		
+	-- local function wave_2()
+	-- 	ChessSpawner:SpawnChess(self, {1,1,2,6,6,4})
 	-- end
 
-	local function wave_1()
-		ChessSpawner:SpawnChess(self, {2,2,1,4,4,})
-	end
+	-- local function wave_3()
+	-- 	ChessSpawner:SpawnChess(self, {3,2,3,3,2,6})
+	-- end
 
-	local function wave_2()
-		ChessSpawner:SpawnChess(self, {1,1,2,6,6,4})
-	end
-
-	local function wave_3()
-		ChessSpawner:SpawnChess(self, {3,2,3,3,2,6})
-	end
-
-	wave_1()
-	self:RegistLogicTimer(5, {wave_2})
-	self:RegistLogicTimer(10, {wave_3})
+	-- wave_1()
+	-- self:RegistLogicTimer(5, {wave_2})
+	-- self:RegistLogicTimer(10, {wave_3})
 
 	return 1
 end
@@ -214,8 +200,7 @@ end
 function EnemyMap:_Init()
 	EnemyChessPool:Init("ENEMY_CHESS")
 	self.obj_pool = EnemyChessPool
-
-	ChessSpawner:SpawnChess(self, self.obj_pool)
+	self:InitChess(3, spec_list)
 
 	return 1
 end

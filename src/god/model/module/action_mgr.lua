@@ -74,7 +74,6 @@ end
 
 function ActionMgr:NextRound()
 	Event:FireEvent("GAME.ACTION_OVER")
-	GameStateMachine:OnActionOver()
 
 	self.combo_count = 0
 	self.rest_round_num = self.raw_round_num

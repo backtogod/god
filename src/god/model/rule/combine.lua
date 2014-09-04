@@ -19,45 +19,61 @@ function CombineMgr:_Uninit( ... )
 end
 
 function CombineMgr:CheckCombine(map)
-	print("Start Check Map for Combine")
-	map:Debug()
+	-- print("Start Check Map for Combine")
+	-- map:Debug()
 	self:TryMerge(map)
 	self:CheckCombineForWall(map)	
 	self:CheckCombineForArmy(map)
+end
+
+function CombineMgr:GetCanCombine(map, id_list, ret_list)
+	local start_index = 1
+	local end_index = 1
+	local count = #id_list
+	while start_index < count do
+		local check_id = id_list[start_index]
+		local check_chess = map.obj_pool:GetById(check_id)
+		if check_chess then
+			local combine_list = {check_id}
+			end_index = start_index + 1
+			while end_index <= count do
+				local chess_id = id_list[end_index]
+				local chess = map.obj_pool:GetById(chess_id)
+				local check_result = self:CanCombine(check_chess, chess)
+
+				if check_result <= 0 then
+					start_index = end_index
+					if check_result < 0 then
+						start_index = start_index + 1
+					end
+					break
+				end
+				combine_list[#combine_list + 1] = chess_id
+				if #combine_list >= 3 then
+					table.insert(ret_list, combine_list)
+					start_index = end_index + 1
+					break
+				end
+				end_index = end_index + 1
+			end
+			if start_index < end_index then
+				break
+			end
+		else
+			start_index = start_index + 1
+		end
+	end
 end
 
 function CombineMgr:CheckCombineForWall(map)
 	--WALL
 	local wall_list = {}
 	for y = 1, Def.MAP_HEIGHT do
-		local index = 1		
-		while index < Def.MAP_WIDTH do
-			local check_id = map:GetCell(index, y)
-			local check_chess = map.obj_pool:GetById(check_id)
-			if check_chess then
-				local combine_list = {check_id}
-				for x = index + 1, Def.MAP_WIDTH do
-					local chess_id = map:GetCell(x, y)
-					local chess = map.obj_pool:GetById(chess_id)
-					local check_result = self:CanCombine(check_chess, chess)
-					if check_result <= 0 then
-						index = x
-						if check_result < 0 then
-							index = index + 1
-						end
-						break
-					end
-					combine_list[#combine_list + 1] = chess_id
-					if #combine_list >= 3 then
-						table.insert(wall_list, combine_list)
-						index = x + 1
-						break
-					end
-				end
-			else
-				index = index + 1
-			end
-		end		
+		local id_list = {}
+		for x = 1, Def.MAP_WIDTH do
+			id_list[x] = map:GetCell(x, y)
+		end
+		self:GetCanCombine(map, id_list, wall_list)
 	end
 	for _, combine_list in ipairs(wall_list) do
 		self:GenerateWall(map, combine_list)
@@ -68,41 +84,11 @@ function CombineMgr:CheckCombineForArmy(map)
 	--ARMY
 	local army_list = {}
 	for x = 1, Def.MAP_WIDTH do
-		local start_index = 1
-		local end_index = 1
-		while start_index < Def.MAP_HEIGHT do
-			local check_id = map:GetCell(x, start_index)
-			local check_chess = map.obj_pool:GetById(check_id)
-			if check_chess then
-				local combine_list = {check_id}
-				end_index = start_index + 1
-				while end_index <= Def.MAP_HEIGHT do
-					local chess_id = map:GetCell(x, end_index)
-					local chess = map.obj_pool:GetById(chess_id)
-					local check_result = self:CanCombine(check_chess, chess)
-
-					if check_result <= 0 then
-						start_index = end_index
-						if check_result < 0 then
-							start_index = start_index + 1
-						end
-						break
-					end
-					combine_list[#combine_list + 1] = chess_id
-					if #combine_list >= 3 then
-						table.insert(army_list, combine_list)
-						start_index = end_index + 1
-						break
-					end
-					end_index = end_index + 1
-				end
-				if start_index < end_index then
-					break
-				end
-			else
-				start_index = start_index + 1
-			end
-		end		
+		local id_list = {}
+		for y = 1, Def.MAP_HEIGHT do
+			id_list[x] = map:GetCell(x, y)
+		end
+		self:GetCanCombine(map, id_list, army_list)
 	end
 	for _, combine_list in ipairs(army_list) do
 		self:GenerateArmy(map, combine_list)

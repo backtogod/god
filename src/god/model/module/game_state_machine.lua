@@ -27,6 +27,8 @@ GameStateMachine.DEBUG_DISPLAY = {
 }
 
 GameStateMachine:DeclareListenEvent("GAME.START_WATCH", "OnStartWatch")
+GameStateMachine:DeclareListenEvent("GAME.ACTION_OVER", "OnActionOver")
+GameStateMachine:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 
 function GameStateMachine:_Uninit( ... )
 	ChessSpawner:Uninit()
@@ -46,7 +48,7 @@ function GameStateMachine:SetState(state)
 	Event:FireEvent("GAME_STATE.CHANGE", state)
 end
 
-function GameStateMachine:GetState( )
+function GameStateMachine:GetState()
 	return self.state
 end
 
@@ -98,9 +100,17 @@ end
 
 function GameStateMachine:OnActionOver()
 	if self:IsInEnemyAction() == 1 then
-		self:SetState(self.STATE_SELF_OPERATE)
+		self:SetState(self.STATE_SELF_WATCH)
 	elseif self:IsInSelfAction() == 1 then
+		self:SetState(self.STATE_ENEMY_WATCH)
+	end
+end
+
+function GameStateMachine:OnActionStart()
+	if self:IsInEnemyAction() == 1 then
 		self:SetState(self.STATE_ENEMY_OPERATE)
+	elseif self:IsInSelfAction() == 1 then
+		self:SetState(self.STATE_SELF_OPERATE)
 	end
 end
 

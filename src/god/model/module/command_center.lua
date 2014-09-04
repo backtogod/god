@@ -12,6 +12,7 @@ end
 
 function CommandCenter:_Uninit( ... )
 	-- body
+	return 1
 end
 
 function CommandCenter:_Init( ... )

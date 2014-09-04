@@ -203,6 +203,7 @@ if not EnemyMap then
 end
 EnemyMap:DeclareListenEvent("ENEMY_CHESS.ADD", "OnChessAdd")
 EnemyMap:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnChessRemove")
+EnemyMap:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnChessSetPosition")
 
 function EnemyMap:_Uninit()
 	EnemyChessPool:Uninit()

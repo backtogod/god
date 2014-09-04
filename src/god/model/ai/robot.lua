@@ -26,7 +26,7 @@ function Robot:OnGameState(state)
 	local can_move_list = {}
 	local can_pick_list = {}
 	for logic_x = 1, Def.MAP_WIDTH do
-		if EnemyMap:GetCell(logic_x, 1) >= 0 then
+		if EnemyMap:GetCell(logic_x, 1) > 0 then
 			can_pick_list[#can_pick_list + 1] = logic_x
 		end
 		if EnemyMap:GetCell(logic_x, Def.MAP_HEIGHT) <= 0 then
@@ -34,7 +34,11 @@ function Robot:OnGameState(state)
 		end
 	end
 
-	local pick_x = math.random(1, #can_pick_list)
+	local pick_x = can_pick_list[math.random(1, #can_pick_list)]
 	print("Robot pick", pick_x)
-	-- local ret_code, result = CommandCenter:ReceiveCommand({"PickChess", pick_x})
+	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", pick_x})
+	print(ret_code, pick_id)
+
+	local drop_x = can_move_list[math.random(1, #can_move_list)]
+	local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", pick_id, drop_x})
 end

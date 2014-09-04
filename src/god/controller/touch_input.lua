@@ -38,6 +38,9 @@ function TouchInput:OnTouchBegan(x, y)
 end
 
 function TouchInput:OnTouchMoved(x, y)
+	if GameStateMachine:CanOperate() ~= 1 then
+		return
+	end
 	local id = self.pick_id
 	if not id then
 		return
@@ -52,6 +55,9 @@ function TouchInput:OnTouchMoved(x, y)
 end
 
 function TouchInput:OnTouchEnded(x, y)
+	if GameStateMachine:CanOperate() ~= 1 then
+		return
+	end
 	local id = self.pick_id
 	if not id then
 		return

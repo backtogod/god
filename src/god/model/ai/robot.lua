@@ -9,7 +9,7 @@ if not Robot then
 	Robot = ModuleMgr:NewModule("robot")
 end
 
-Robot:DeclareListenEvent("COMMAND.EXECUTE_COMPLETE", "OnExecuteCommandComplete")
+Robot:DeclareListenEvent("GAME.OPERATE_END", "OnGameOperateEnd")
 Robot:DeclareListenEvent("GAME.ACTION_OVER", "OnActionEnd")
 Robot:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 
@@ -22,15 +22,19 @@ function Robot:_Init()
 end
 
 function Robot:OnActionStart()
-	if GameStateMachine:IsInEnemyAction() == 1 then
-		ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
-	end
+	-- if GameStateMachine:IsInEnemyAction() == 1 then
+	-- 	ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
+	-- 	self:ThinkAndOperate()
+	-- end
+	ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
+	self:ThinkAndOperate()
 end
 
 function Robot:OnActionEnd()
-	if GameStateMachine:IsInEnemyAction() == 1 then
-		ModuleMgr:UnregisterUpdate(self:GetClassName())
-	end
+	-- if GameStateMachine:IsInEnemyAction() == 1 then
+	-- 	ModuleMgr:UnregisterUpdate(self:GetClassName())
+	-- end
+	ModuleMgr:UnregisterUpdate(self:GetClassName())
 end
 
 function Robot:OnActive(frame)
@@ -54,31 +58,37 @@ function Robot:OnActive(frame)
 	end
 end
 
-function Robot:OnExecuteCommandComplete(command_name, result)
-	if GameStateMachine:IsInEnemyAction() ~= 1 then
+function Robot:ThinkAndOperate()
+	if ActionMgr:GetRestRoundNum() <= 0 then
 		return
 	end
-	if command_name == "TryDropChess" then
-		local can_move_list = {}
-		local can_pick_list = {}
-		for logic_x = 1, Def.MAP_WIDTH do
-			if EnemyMap:GetCell(logic_x, 1) > 0 then
-				can_pick_list[#can_pick_list + 1] = logic_x
-			end
-			if EnemyMap:GetCell(logic_x, Def.MAP_HEIGHT) <= 0 then
-				can_move_list[#can_move_list + 1] = logic_x
-			end
+	local can_move_list = {}
+	local can_pick_list = {}
+	for logic_x = 1, Def.MAP_WIDTH do
+		if EnemyMap:GetCell(logic_x, 1) > 0 then
+			can_pick_list[#can_pick_list + 1] = logic_x
 		end
-
-		local pick_x = can_pick_list[math.random(1, #can_pick_list)]
-		local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", pick_x})
-
-		local drop_x = can_move_list[math.random(1, #can_move_list)]
-		while drop_x == pick_x do
-			drop_x = can_move_list[math.random(1, #can_move_list)]
+		if EnemyMap:GetCell(logic_x, Def.MAP_HEIGHT) <= 0 then
+			can_move_list[#can_move_list + 1] = logic_x
 		end
-		self.pick_id = pick_id
-		self.move_x = pick_x
-		self.drop_x = drop_x
 	end
+
+	local pick_x = can_pick_list[math.random(1, #can_pick_list)]
+	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", pick_x})
+
+	local drop_x = can_move_list[math.random(1, #can_move_list)]
+	while drop_x == pick_x do
+		drop_x = can_move_list[math.random(1, #can_move_list)]
+	end
+	self.pick_id = pick_id
+	self.move_x = pick_x
+	self.drop_x = drop_x
+end
+
+function Robot:OnGameOperateEnd()
+	-- local state = GameStateMachine:GetState()
+	-- if state ~= GameStateMachine.STATE_ENEMY_OPERATE then
+	-- 	return
+	-- end
+	self:RegistLogicTimer(20, {self.ThinkAndOperate, self})
 end

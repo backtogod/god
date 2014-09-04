@@ -86,7 +86,7 @@ function CombineMgr:CheckCombineForArmy(map)
 	for x = 1, Def.MAP_WIDTH do
 		local id_list = {}
 		for y = 1, Def.MAP_HEIGHT do
-			id_list[x] = map:GetCell(x, y)
+			id_list[y] = map:GetCell(x, y)
 		end
 		self:GetCanCombine(map, id_list, army_list)
 	end
@@ -100,10 +100,13 @@ function CombineMgr:CanCombine(chess_a, chess_b)
 		return -1
 	end
 
-	if chess_a:TryCall("GetState") ~= Def.STATE_NORMAL or chess_b:TryCall("GetState") ~= Def.STATE_NORMAL then
-		return -1
+	if chess_a:TryCall("GetState") ~= Def.STATE_NORMAL then
+		return 0
 	end
 
+	if chess_b:TryCall("GetState") ~= Def.STATE_NORMAL then
+		return -1
+	end
 	if chess_a:GetTemplateId() ~= chess_b:GetTemplateId() then
 		return 0
 	end

@@ -9,10 +9,6 @@ if not TouchInput then
 	TouchInput = ModuleMgr:NewModule("TouchInput")
 end
 
-TouchInput:DeclareListenEvent("SCREEN.ON_TOUCH_BEGAN", "OnTouchBegan")
-TouchInput:DeclareListenEvent("SCREEN.ON_TOUCH_MOVED", "OnTouchMoved")
-TouchInput:DeclareListenEvent("SCREEN.ON_TOUCH_ENDED", "OnTouchEnded")
-
 function TouchInput:_Uninit( ... )
 	return 1
 end
@@ -25,7 +21,8 @@ function TouchInput:OnTouchBegan(x, y)
 	if GameStateMachine:CanOperate() ~= 1 then
 		return
 	end
-	local logic_x, check_y = SelfMap:Pixel2Logic(x, y)
+	local map = GameStateMachine:GetActiveMap()
+	local logic_x, check_y = map:Pixel2Logic(x, y)
 	if check_y < 1 or check_y > Def.MAP_HEIGHT then
 		return
 	end
@@ -45,7 +42,8 @@ function TouchInput:OnTouchMoved(x, y)
 	if not id then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
+	local map = GameStateMachine:GetActiveMap()
+	local logic_x, _ = map:Pixel2Logic(x, y)
 	if logic_x == self.last_logic_x then
 		return
 	end
@@ -62,7 +60,8 @@ function TouchInput:OnTouchEnded(x, y)
 	if not id then
 		return
 	end
-	local logic_x, _ = SelfMap:Pixel2Logic(x, y)
+	local map = GameStateMachine:GetActiveMap()
+	local logic_x, _ = map:Pixel2Logic(x, y)
 	local is_success = 0
 	if self.pick_logic_x ~= logic_x then
 		local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", id, logic_x})

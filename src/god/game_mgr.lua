@@ -41,11 +41,17 @@ end
 function GameMgr:_Init()
 
     Log:Init(Log.LOG_DEBUG, Log.LOG_INFO)
-    
-    Debug:AddBlackEvent("GAME_STATE.CHANGE")
+   
+    Debug:AddWhiteEvent("PICKHELPER.PICK", Log.LOG_INFO)
+    Debug:AddWhiteEvent("PICKHELPER.CANCEL_PICK", Log.LOG_INFO)
+    Debug:AddWhiteEvent("PICKHELPER.DROP", Log.LOG_INFO)
+
+    -- Debug:AddBlackEvent("GAME_STATE.CHANGE")
     Debug:AddBlackEvent("GAME.ROUND_REST_NUM_CHANGED")
     Debug:AddBlackEvent("CHESS.LIFE_CHANGED")
     Debug:AddBlackEvent("CHESS.SET_TEMPLATE")
+
+    Debug:ChangeMode(Debug.MODE_WHITE_LIST)
 
     local action_node = ComponentMgr:GetComponent("ACTION")
     for state, allow_state_list in pairs(Def.ALLOW_STATE_RULE) do

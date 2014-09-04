@@ -24,6 +24,7 @@ Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnEnemyChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDisplayPosition")
+Scene:DeclareListenEvent("ENEMY_CHESS.MOVE_TO", "OnEnemyChessMove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
 Scene:DeclareListenEvent("ENEMY_CHESS.CHANGE_STATE", "OnEnemyChessChangeState")
 
@@ -258,7 +259,8 @@ end
 
 function Scene:OnPickChess(id, logic_x, logic_y)
 	local map = GameStateMachine:GetActiveMap()
-	local chess = self:GetObj("main", map:GetClassName(), id)
+	local map_name = map:GetClassName()
+	local chess = self:GetObj("main", map_name, id)
 	chess:setOpacity(200)
 	local copy_chess = cc.Sprite:createWithTexture(chess:getTexture())
 	copy_chess:setAnchorPoint(cc.p(0.5, 0))
@@ -266,17 +268,18 @@ function Scene:OnPickChess(id, logic_x, logic_y)
 	local rect = copy_chess:getBoundingBox()
 	local scale_x = Def.MAP_CELL_WIDTH / rect.width
 	copy_chess:setScale(scale_x)
-	self:AddObj("main", map:GetClassName(), "copy", copy_chess)
+	self:AddObj("main", map_name, "copy", copy_chess)
 	self:SetMapChessPosition(map, "copy", logic_x, logic_y)
 end
 
 function Scene:OnCancelPickChess(id)
 	local map = GameStateMachine:GetActiveMap()
-	local chess = self:GetObj("main", map:GetClassName(), id)
+	local map_name = map:GetClassName()
+	local chess = self:GetObj("main", map_name, id)
 	local logic_chess = ChessPool:GetById(id)
 	self:SetMapChessPosition(map, id, logic_chess.x, logic_chess.y)
 	chess:setOpacity(255)
-	self:RemoveObj("main", map:GetClassName(), "copy")
+	self:RemoveObj("main", map_name, "copy")
 end
 
 function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
@@ -291,6 +294,10 @@ end
 
 function Scene:OnChessMove(chess_id, logic_x, logic_y)
 	return self:MoveChessToPosition(SelfMap, chess_id, logic_x, logic_y)
+end
+
+function Scene:OnEnemyChessMove(chess_id, logic_x, logic_y)
+	return self:MoveChessToPosition(EnemyMap, chess_id, logic_x, logic_y)
 end
 
 function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)

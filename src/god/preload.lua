@@ -6,6 +6,7 @@ AddProjectScript("model/base/map.lua")
 AddProjectScript("model/base/chess.lua")
 
 AddProjectScript("model/rule/combine.lua")
+AddProjectScript("model/rule/pick_rule.lua")
 
 AddProjectScript("model/module/game_state_machine.lua")
 AddProjectScript("model/module/action_mgr.lua")

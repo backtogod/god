@@ -51,7 +51,7 @@ function GameMgr:_Init()
     Debug:AddBlackEvent("CHESS.LIFE_CHANGED")
     Debug:AddBlackEvent("CHESS.SET_TEMPLATE")
 
-    Debug:ChangeMode(Debug.MODE_WHITE_LIST)
+    -- Debug:ChangeMode(Debug.MODE_WHITE_LIST)
 
     local action_node = ComponentMgr:GetComponent("ACTION")
     for state, allow_state_list in pairs(Def.ALLOW_STATE_RULE) do

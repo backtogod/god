@@ -57,11 +57,11 @@ end
 
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 	self.combo_count = 0
-	local logic_chess = map.obj_pool:GetById(id)
-	assert(logic_chess)
-	logic_chess:SetPosition(logic_x, logic_y)
-	CombineMgr:CheckCombine(map)
-	ActionMgr:ChangeRestRoundNum(-1)
+	-- local logic_chess = map.obj_pool:GetById(id)
+	-- assert(logic_chess)
+	-- logic_chess:SetPosition(logic_x, logic_y)
+	-- CombineMgr:CheckCombine(map)
+	-- ActionMgr:ChangeRestRoundNum(-1)
 end
 
 function ActionMgr:OnCommandExecuteComplete(command_name)
@@ -73,10 +73,10 @@ end
 function ActionMgr:OnOperateEnd()
 	if self:GetRestRoundNum() > 0 then
 		GameStateMachine:OnEndWatch()
-		Event:FireEvent("GAME.OPERATE_END")
-		return
+	else
+		self:NextRound()
 	end
-	self:NextRound()
+	Event:FireEvent("GAME.OPERATE_END")
 end
 
 function ActionMgr:NextRound()

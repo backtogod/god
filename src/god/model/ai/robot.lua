@@ -21,24 +21,26 @@ function Robot:_Init()
 	return 1
 end
 
+function Robot:CanWork()
+	if GameStateMachine:IsInEnemyAction() == 1 then
+		return 1
+	end
+end
+
 function Robot:OnActionStart()
-	-- if GameStateMachine:IsInEnemyAction() == 1 then
-	-- 	ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
-	-- 	self:ThinkAndOperate()
-	-- end
-	ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
-	self:ThinkAndOperate()
+	if self:CanWork() == 1 then
+		ModuleMgr:RegisterUpdate(self:GetClassName(), "OnActive")
+	end
 end
 
 function Robot:OnActionEnd()
-	-- if GameStateMachine:IsInEnemyAction() == 1 then
-	-- 	ModuleMgr:UnregisterUpdate(self:GetClassName())
-	-- end
-	ModuleMgr:UnregisterUpdate(self:GetClassName())
+	if self:CanWork() == 1 then
+		ModuleMgr:UnregisterUpdate(self:GetClassName())
+	end
 end
 
 function Robot:OnActive(frame)
-	if frame % 3 == 0 then
+	if frame % 1 == 0 then
 		if self.pick_id then
 			if self.drop_x == self.move_x then
 				local pick_id = self.pick_id
@@ -62,13 +64,17 @@ function Robot:ThinkAndOperate()
 	if ActionMgr:GetRestRoundNum() <= 0 then
 		return
 	end
+	print("............Start Think")
+	local map = GameStateMachine:GetActiveMap()
 	local can_move_list = {}
 	local can_pick_list = {}
+	assert(not self.pick_id)
 	for logic_x = 1, Def.MAP_WIDTH do
-		if EnemyMap:GetCell(logic_x, 1) > 0 then
+		local chess_id = PickRule:GetCanPick(map, logic_x)
+		if chess_id then
 			can_pick_list[#can_pick_list + 1] = logic_x
 		end
-		if EnemyMap:GetCell(logic_x, Def.MAP_HEIGHT) <= 0 then
+		if PickRule:CanDrop(map, logic_x, logic_y) == 1 then
 			can_move_list[#can_move_list + 1] = logic_x
 		end
 	end
@@ -83,12 +89,13 @@ function Robot:ThinkAndOperate()
 	self.pick_id = pick_id
 	self.move_x = pick_x
 	self.drop_x = drop_x
+	print("............Think Result", pick_id, "Move", pick_x, drop_x)
 end
 
 function Robot:OnGameOperateEnd()
-	-- local state = GameStateMachine:GetState()
-	-- if state ~= GameStateMachine.STATE_ENEMY_OPERATE then
-	-- 	return
-	-- end
-	self:RegistLogicTimer(20, {self.ThinkAndOperate, self})
+	local state = GameStateMachine:GetState()
+	if state ~= GameStateMachine.STATE_ENEMY_OPERATE then
+		return
+	end
+	self:RegistLogicTimer(10, {self.ThinkAndOperate, self})
 end

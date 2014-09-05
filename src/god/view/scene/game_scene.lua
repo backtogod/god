@@ -70,6 +70,8 @@ function Scene:InitUI()
 	self:AddReturnMenu()
 	self:AddReloadMenu()
 
+	self:SetBackGroundImage({"god/map.png"}, 0)
+
 	local ui_frame = self:GetUI()
 
 	local label_round = cc.Label:createWithSystemFont("Round X", "Arial", 40)
@@ -101,7 +103,7 @@ function Scene:InitUI()
 	label_combo:setVisible(false)
 	Ui:AddElement(ui_frame, "LABEL", "combo", visible_size.width / 2, visible_size.height / 2, label_combo)
 
-	self:DrawGrip()
+	-- self:DrawGrip()
 
 	return 1
 end

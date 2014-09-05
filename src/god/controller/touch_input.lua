@@ -23,7 +23,7 @@ function TouchInput:OnTouchBegan(x, y)
 	end
 	local map = GameStateMachine:GetActiveMap()
 	local logic_x, logic_y = map:Pixel2Logic(x, y)
-	if logic_y < 1 or logic_y > Def.MAP_HEIGHT then
+	if logic_y < 1 then
 		return
 	end
 	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", logic_x, logic_y})

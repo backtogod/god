@@ -9,8 +9,7 @@ if not ActionMgr then
 	ActionMgr = ModuleMgr:NewModule("ActionMgr")
 end
 
-ActionMgr:DeclareListenEvent("GAME.END_WATCH", "OnOperateEnd")
-ActionMgr:DeclareListenEvent("COMMAND.EXECUTE_COMPLETE", "OnCommandExecuteComplete")
+ActionMgr:DeclareListenEvent("GAME.END_WATCH", "OnEndWatch")
 ActionMgr:DeclareListenEvent("COMBINE.WALL", "OnCombo")
 ActionMgr:DeclareListenEvent("COMBINE.ARMY", "OnCombo")
 
@@ -57,26 +56,15 @@ end
 
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 	self.combo_count = 0
-	-- local logic_chess = map.obj_pool:GetById(id)
-	-- assert(logic_chess)
-	-- logic_chess:SetPosition(logic_x, logic_y)
-	-- CombineMgr:CheckCombine(map)
-	-- ActionMgr:ChangeRestRoundNum(-1)
 end
 
-function ActionMgr:OnCommandExecuteComplete(command_name)
-	if self.IS_COST_STEP[command_name] and GameStateMachine:IsWatching() ~= 1 then
-		self:OnOperateEnd()
-	end
-end
-
-function ActionMgr:OnOperateEnd()
+function ActionMgr:OnEndWatch()
 	if self:GetRestRoundNum() > 0 then
 		GameStateMachine:OnEndWatch()
+		Event:FireEvent("GAME.AI_ACTIVE")
 	else
 		self:NextRound()
 	end
-	Event:FireEvent("GAME.OPERATE_END")
 end
 
 function ActionMgr:NextRound()
@@ -86,8 +74,10 @@ function ActionMgr:NextRound()
 	self.combo_count = 0
 	self.rest_round_num = self.raw_round_num
 	self.round_count = self.round_count + 1
-	GameStateMachine:OnActionStart()
-	Event:FireEvent("GAME.ACTION_START", self.round_count)
+	local function call_back()
+		Event:FireEvent("GAME.ACTION_START", self.round_count)
+	end
+	Battle:BattleStart(call_back)
 end
 
 ActionMgr.IS_COST_STEP = {

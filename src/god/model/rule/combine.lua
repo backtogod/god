@@ -138,7 +138,7 @@ function CombineMgr:GenerateArmy(map, list, x)
 
 	for _, check_id in ipairs(list) do
 		local chess = map.obj_pool:GetById(check_id)
-		if chess:TryCall("SetState", Def.STATE_ARMY) ~= 1 then
+		if chess:TransformtToArmy() ~= 1 then
 			assert(false)
 			return
 		end

@@ -15,7 +15,7 @@ assert = function(expression, fmt, ...)
             log_system:Print(log_system.LOG_ERROR, fmt, ...)
         end
         log_system:Print(log_system.LOG_ERROR, debug.traceback())
-        if CAssert and __platform == cc.PLATFORM_OS_WINDOWS then
+        if CAssert --[[and __platform == cc.PLATFORM_OS_WINDOWS]] then
             CAssert(false)
         end
     end

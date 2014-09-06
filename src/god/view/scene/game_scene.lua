@@ -19,6 +19,7 @@ Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPositio
 Scene:DeclareListenEvent("CHESS.MOVE_TO", "OnChessMove")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
 Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
+Scene:DeclareListenEvent("CHESS.ATTACK", "OnChessAttack")
 
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
@@ -27,6 +28,7 @@ Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDis
 Scene:DeclareListenEvent("ENEMY_CHESS.MOVE_TO", "OnEnemyChessMove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
 Scene:DeclareListenEvent("ENEMY_CHESS.CHANGE_STATE", "OnEnemyChessChangeState")
+Scene:DeclareListenEvent("ENEMY_CHESS.ATTACK", "OnChessAttack")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
@@ -36,6 +38,8 @@ Scene:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
 Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
 Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
+
+Scene:DeclareListenEvent("BATTLE.START", "OnBattleStart")
 
 function Scene:_Uninit( ... )
 	Robot:Uninit()
@@ -341,9 +345,10 @@ function Scene:OnMoveComplete(map)
 	self.wait_move_helper:Uninit()
 	self.wait_move_helper = nil
 	CombineMgr:CheckCombine(map)
-	ActionMgr:ChangeRestRoundNum(-1)
 	if not self.wait_transform_helper then
+		print("move_complete")
 		Event:FireEvent("GAME.END_WATCH")
+		ActionMgr:ChangeRestRoundNum(-1)
 	end
 end
 
@@ -404,6 +409,7 @@ function Scene:OnTransformComplete(map)
 	Mover:MoveWallArmy(map)
 
 	if not self.wait_move_helper then
+		print("tranform complete")
 		Event:FireEvent("GAME.END_WATCH")
 	end
 end
@@ -451,4 +457,28 @@ function Scene:OnComboChanged(combo_count)
 	)
 	label:stopAllActions()
 	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
+end
+
+function Scene:OnBattleStart()
+	if not self.wait_battle_helper then
+		print("batte_end")
+		self:OnBattleComplete()
+	end
+end
+
+function Scene:OnBattleComplete()
+	if GameStateMachine:IsWatching() == 1 then
+		Event:FireEvent("GAME.END_WATCH")
+		Battle:BattleComplete()
+	end
+end
+
+function Scene:OnChessAttack(id)
+	if not self.wait_battle_helper then
+		self.wait_battle_helper = Class:New(WaitHelper, "BattleWaiter")
+		self.wait_battle_helper:Init({self.OnBattleComplete, self})
+		self.wait_battle_helper:EnableDebug()
+	end
+	local waiter = self.wait_battle_helper
+	local job_id = waiter:WaitJob(Def.DEFAULT_ATTACK_TIME)
 end

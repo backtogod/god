@@ -9,7 +9,7 @@ if not Robot then
 	Robot = ModuleMgr:NewModule("robot")
 end
 
-Robot:DeclareListenEvent("GAME.OPERATE_END", "OnGameOperateEnd")
+Robot:DeclareListenEvent("GAME.AI_ACTIVE", "OnAIActive")
 Robot:DeclareListenEvent("GAME.ACTION_OVER", "OnActionEnd")
 Robot:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 
@@ -64,6 +64,9 @@ function Robot:ThinkAndOperate()
 	if ActionMgr:GetRestRoundNum() <= 0 then
 		return
 	end
+	if GameStateMachine:IsWatching() == 1 then
+		return
+	end
 	print("............Start Think")
 	local map = GameStateMachine:GetActiveMap()
 	local can_move_list = {}
@@ -92,7 +95,7 @@ function Robot:ThinkAndOperate()
 	print("............Think Result", pick_id, "Move", pick_x, drop_x)
 end
 
-function Robot:OnGameOperateEnd()
+function Robot:OnAIActive()
 	local state = GameStateMachine:GetState()
 	if state ~= GameStateMachine.STATE_ENEMY_OPERATE then
 		return

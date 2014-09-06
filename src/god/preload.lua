@@ -13,6 +13,7 @@ AddProjectScript("model/module/action_mgr.lua")
 AddProjectScript("model/module/chess_spawner.lua")
 AddProjectScript("model/module/mover.lua")
 AddProjectScript("model/module/command_center.lua")
+AddProjectScript("model/module/battle.lua")
 
 AddProjectScript("model/ai/robot.lua")
 

@@ -95,6 +95,17 @@ function Map:OnChessRemove(id)
 	self.cell_list[id] = nil
 end
 
+function Map:GetArmyList()
+	local result = {}
+	for id, _ in pairs(self.cell_list) do
+		local chess = self.obj_pool:GetById(id)
+		if chess and chess:TryCall("GetState") == Def.STATE_ARMY then
+			result[#result + 1] = chess
+		end
+	end
+	return result
+end
+
 function Map:Debug(is_detail)
 	Lib:Show2DTB(self.cell_pool, Def.MAP_WIDTH, Def.MAP_HEIGHT, 1)
 	if is_detail == 1 then

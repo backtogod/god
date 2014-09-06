@@ -31,6 +31,7 @@ function Chess:_Init(id, template_id, x, y)
 	self.life = data.base_life
 	self.max_life = data.base_life
 	self:AddComponent("action", "ACTION")
+	self.wait_round = -1
 	return 1
 end
 
@@ -56,6 +57,32 @@ function Chess:ChangeLife(change_value)
 		new_value = 0
 	end
 	self:SetLife(new_value)
+end
+
+function Chess:GetWaitRound()
+	if self:GetChild("action"):GetState() ~= Def.STATE_ARMY then
+		return -1
+	end
+	return self.wait_round
+end
+
+function Chess:SetWaitRound(round)
+	if self:GetChild("action"):GetState() ~= Def.STATE_ARMY then
+		return 0
+	end
+	self.wait_round = round
+	local event_name = self:GetClassName() .. ".WAIT_ROUND_CHANGED"
+	Event:FireEvent(event_name, self:GetId(), round)
+	return 1
+end
+
+function Chess:ChangeWaitRound(change_value)
+	local round = self:GetWaitRound()
+	local new_value = round + change_value
+	self:SetWaitRound(new_value)
+	if new_value <= 0 then
+		self:Attack()
+	end
 end
 
 function Chess:SetPosition(x, y)
@@ -99,11 +126,24 @@ function Chess:TransformtToWall()
 	return 1
 end
 
+function Chess:TransformtToArmy()
+	if self:TryCall("SetState", Def.STATE_ARMY) ~= 1 then
+		assert(false)
+		return 0
+	end
+	local data = ChessConfig:GetData(self.template_id)
+	assert(data.wait_round)
+	self:SetWaitRound(data.wait_round)
+	return 1
+end
+
 function Chess:GetWallLevel()
 	if self.template_id == "wall_1" then
 		return 1
 	elseif self.template_id == "wall_2" then
 		return 2
+	elseif self.template_id == "wall_3" then
+		return 3
 	end
 	return 0
 end
@@ -120,6 +160,16 @@ function Chess:Evolution(chess_food)
 		self:SetTemplateId("wall_"..final_level)
 	elseif state == Def.STATE_ARMY then
 		self:ChangeLife(chess_food:GetLife())
+		local min_round = self:GetWaitRound()
+		local food_round = chess_food:GetWaitRound()
+		if food_round < min_round then
+			self:SetWaitRound(food_round)
+		end
 	end
 	return 1
+end
+
+function Chess:Attack()
+	local event_name = self:GetClassName() .. ".ATTACK"
+	Event:FireEvent(event_name, self:GetId())
 end

@@ -14,7 +14,8 @@ function ViewInterface:WaitRoundStartFinish(call_back)
 end
 
 function ViewInterface:WaitWatchEnd(call_back)
-	
+	local view_scene = SceneMgr:GetCurrentScene()
+	view_scene:StartWatch(call_back)
 end
 
 function ViewInterface:WaitMoveComplete(chess, logic_x, logic_y, call_back)

@@ -9,7 +9,6 @@ if not ActionMgr then
 	ActionMgr = ModuleMgr:NewModule("ActionMgr")
 end
 
-ActionMgr:DeclareListenEvent("GAME.END_WATCH", "OnEndWatch")
 ActionMgr:DeclareListenEvent("COMBINE.WALL", "OnCombo")
 ActionMgr:DeclareListenEvent("COMBINE.ARMY", "OnCombo")
 
@@ -25,8 +24,18 @@ function ActionMgr:_Init(raw_round_num)
 	self.raw_round_num = raw_round_num
 	self.rest_round_num = 0
 	self.combo_count = 0
+	Event:FireEvent("GAME.START_WATCH")
+	ViewInterface:WaitWatchEnd( 
+		function()
+			Event:FireEvent("GAME.END_WATCH")
+			if self:GetRestRoundNum() > 0 then
+				Event:FireEvent("GAME.AI_ACTIVE")
+			else
+				self:NextRound()
+			end
+		end
+	)
 
-	Event:FireEvent("GAME.ACTION_START", self.round_count)
 	return 1
 end
 
@@ -45,9 +54,6 @@ end
 
 function ActionMgr:ChangeRestRoundNum(change_value)
 	self:SetRestRoundNum(self.rest_round_num + change_value)
-	if self:GetRestRoundNum() <= 0 and GameStateMachine:IsWatching() ~= 1 then
-		self:NextRound()
-	end
 end
 
 function ActionMgr:GetRestRoundNum()
@@ -56,17 +62,20 @@ end
 
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 	self.combo_count = 0
+	self:ChangeRestRoundNum(-1)
+	Event:FireEvent("GAME.START_WATCH")
+	ViewInterface:WaitWatchEnd( 
+		function()
+			Event:FireEvent("GAME.END_WATCH")
+			if self:GetRestRoundNum() > 0 then
+				Event:FireEvent("GAME.AI_ACTIVE")
+			else
+				self:NextRound()
+			end
+		end
+	)
 	local chess = map.obj_pool:GetById(id)
 	chess:MoveTo(logic_x, logic_y)
-end
-
-function ActionMgr:OnEndWatch()
-	if self:GetRestRoundNum() > 0 then
-		GameStateMachine:OnEndWatch()
-		Event:FireEvent("GAME.AI_ACTIVE")
-	else
-		self:NextRound()
-	end
 end
 
 function ActionMgr:NextRound()
@@ -78,6 +87,7 @@ function ActionMgr:NextRound()
 	self.round_count = self.round_count + 1
 	local function call_back()
 		Event:FireEvent("GAME.ACTION_START", self.round_count)
+		Event:FireEvent("GAME.AI_ACTIVE")
 	end
 	Battle:BattleStart(call_back)
 end

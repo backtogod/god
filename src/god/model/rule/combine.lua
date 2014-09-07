@@ -21,9 +21,15 @@ end
 function CombineMgr:CheckCombine(map)
 	-- print("Start Check Map for Combine")
 	-- map:Debug()
+	local result = 0
 	self:TryMerge(map)
-	self:CheckCombineForWall(map)	
-	self:CheckCombineForArmy(map)
+	if self:CheckCombineForWall(map) == 1 then
+		result = 1
+	end
+	if self:CheckCombineForArmy(map) == 1 then
+		result = 1
+	end
+	return result
 end
 
 function CombineMgr:GetCanCombine(map, id_list, ret_list)
@@ -66,7 +72,7 @@ function CombineMgr:GetCanCombine(map, id_list, ret_list)
 end
 
 function CombineMgr:CheckCombineForWall(map)
-	--WALL
+	local result = 0
 	local wall_list = {}
 	for y = 1, Def.MAP_HEIGHT do
 		local id_list = {}
@@ -77,11 +83,13 @@ function CombineMgr:CheckCombineForWall(map)
 	end
 	for _, combine_list in ipairs(wall_list) do
 		self:GenerateWall(map, combine_list)
+		result = 1
 	end
+	return result
 end
 
 function CombineMgr:CheckCombineForArmy(map)
-	--ARMY
+	local result = 0
 	local army_list = {}
 	for x = 1, Def.MAP_WIDTH do
 		local id_list = {}
@@ -92,7 +100,9 @@ function CombineMgr:CheckCombineForArmy(map)
 	end
 	for _, combine_list in ipairs(army_list) do
 		self:GenerateArmy(map, combine_list)
+		result = 1
 	end
+	return result
 end
 
 function CombineMgr:CanCombine(chess_a, chess_b)

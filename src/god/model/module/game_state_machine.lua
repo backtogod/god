@@ -27,6 +27,7 @@ GameStateMachine.DEBUG_DISPLAY = {
 }
 
 GameStateMachine:DeclareListenEvent("GAME.START_WATCH", "OnStartWatch")
+GameStateMachine:DeclareListenEvent("GAME.END_WATCH", "OnEndWatch")
 
 function GameStateMachine:_Uninit( ... )
 	ChessSpawner:Uninit()

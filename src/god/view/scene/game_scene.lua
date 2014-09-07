@@ -298,12 +298,12 @@ end
 function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y, call_back)
 	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
+	assert(self.wait_watch_helper)
 	if not self.wait_move_helper then
-		self.wait_move_helper = Class:New(WaitHelper, "Waiter")
-		if GameStateMachine:IsWatching() ~= 1 then
-			Event:FireEvent("GAME.START_WATCH")
-		end
+		self.wait_move_helper = Class:New(WaitHelper, "MoveWaiter")
 		self.wait_move_helper:Init({self.OnMoveComplete, self, map})
+
+		self.wait_move_job_id = self.wait_watch_helper:WaitJob(100)
 	end
 	chess_sprite:setLocalZOrder(visible_size.height - y)
 	local waiter = self.wait_move_helper
@@ -330,14 +330,13 @@ function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y, call_back)
 end
 
 function Scene:OnMoveComplete(map)
+	local job_id = self.wait_move_job_id
 	self.wait_move_helper:Uninit()
 	self.wait_move_helper = nil
+	self.wait_move_job_id = nil
 	CombineMgr:CheckCombine(map)
-	if not self.wait_transform_helper then
-		print("move_complete")
-		Event:FireEvent("GAME.END_WATCH")
-		ActionMgr:ChangeRestRoundNum(-1)
-	end
+
+	self.wait_watch_helper:JobComplete(job_id)
 end
 
 function Scene:OnChessChangeState(id, old_state, state)
@@ -369,12 +368,12 @@ function Scene:ChangeChessState(map, id, state)
 		end
 	end
 
+	assert(self.wait_watch_helper)
 	if not self.wait_transform_helper then
 		self.wait_transform_helper = Class:New(WaitHelper, "Waiter")
-		if GameStateMachine:IsWatching() ~= 1 then
-			Event:FireEvent("GAME.START_WATCH")
-		end
 		self.wait_transform_helper:Init({self.OnTransformComplete, self, map})
+
+		self.wait_transofrm_job_id = self.wait_watch_helper:WaitJob(100)
 	end
 
 	local waiter = self.wait_transform_helper
@@ -392,14 +391,13 @@ function Scene:ChangeChessState(map, id, state)
 end
 
 function Scene:OnTransformComplete(map)
+	local job_id = self.wait_transofrm_job_id
 	self.wait_transform_helper:Uninit()
 	self.wait_transform_helper = nil
+	self.wait_transofrm_job_id = nil
 	Mover:MoveWallArmy(map)
 
-	if not self.wait_move_helper then
-		print("tranform complete")
-		Event:FireEvent("GAME.END_WATCH")
-	end
+	self.wait_watch_helper:JobComplete(job_id)
 end
 
 function Scene:OnActionStart(round)
@@ -455,6 +453,10 @@ function Scene:OnBattleStart()
 end
 
 function Scene:OnBattleComplete()
+	if self.wait_battle_helper then
+		self.wait_battle_helper:Uninit()
+		self.wait_battle_helper = nil
+	end
 	if GameStateMachine:IsWatching() == 1 then
 		Event:FireEvent("GAME.END_WATCH")
 		Battle:BattleComplete()
@@ -469,4 +471,16 @@ function Scene:OnChessAttack(id)
 	end
 	local waiter = self.wait_battle_helper
 	local job_id = waiter:WaitJob(Def.DEFAULT_ATTACK_TIME)
+end
+
+function Scene:StartWatch(call_back)
+	assert(not self.wait_watch_helper)
+	self.wait_watch_helper = Class:New(WaitHelper, "WatchWaiter")
+	self.wait_watch_helper:Init({self.EndWatch, self, call_back})
+end
+
+function Scene:EndWatch(call_back)
+	self.wait_watch_helper:Uninit()
+	self.wait_watch_helper = nil
+	call_back()
 end

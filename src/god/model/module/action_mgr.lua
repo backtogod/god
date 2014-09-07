@@ -56,6 +56,8 @@ end
 
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 	self.combo_count = 0
+	local chess = map.obj_pool:GetById(id)
+	chess:MoveTo(logic_x, logic_y)
 end
 
 function ActionMgr:OnEndWatch()

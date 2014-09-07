@@ -16,7 +16,6 @@ Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
 Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
-Scene:DeclareListenEvent("CHESS.MOVE_TO", "OnChessMove")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
 Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
 Scene:DeclareListenEvent("CHESS.ATTACK", "OnChessAttack")
@@ -25,7 +24,6 @@ Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnEnemyChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDisplayPosition")
-Scene:DeclareListenEvent("ENEMY_CHESS.MOVE_TO", "OnEnemyChessMove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
 Scene:DeclareListenEvent("ENEMY_CHESS.CHANGE_STATE", "OnEnemyChessChangeState")
 Scene:DeclareListenEvent("ENEMY_CHESS.ATTACK", "OnChessAttack")
@@ -293,20 +291,11 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	local chess = self:GetObj("main", map:GetClassName(), id)
 	assert(chess)
 	chess:setOpacity(255)
-	self:MoveChessToPosition(map, id, logic_x, logic_y)
 	self:RemoveObj("main", map:GetClassName(), "copy")
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 end
 
-function Scene:OnChessMove(chess_id, logic_x, logic_y)
-	return self:MoveChessToPosition(SelfMap, chess_id, logic_x, logic_y)
-end
-
-function Scene:OnEnemyChessMove(chess_id, logic_x, logic_y)
-	return self:MoveChessToPosition(EnemyMap, chess_id, logic_x, logic_y)
-end
-
-function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
+function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y, call_back)
 	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	if not self.wait_move_helper then
@@ -319,7 +308,7 @@ function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
 	chess_sprite:setLocalZOrder(visible_size.height - y)
 	local waiter = self.wait_move_helper
 	local function func_time_over(id)
-		chess_sprite:setPosition(x, y)
+		call_back()
 	end
 	local start_x, start_y = chess_sprite:getPosition()
 	local time = math.abs(y - start_y) / Def.CHESS_MOVE_SPEED
@@ -330,9 +319,8 @@ function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y)
 	local move_action = cc.MoveTo:create(time, cc.p(x, y))
 	local callback_action = cc.CallFunc:create(
 		function()
-			local logic_chess = map.obj_pool:GetById(chess_id)
-			if logic_chess then
-				logic_chess:SetPosition(logic_x, logic_y)
+			if call_back and type(call_back) == "function" then
+				call_back()
 			end
 			waiter:JobComplete(job_id)
 		end

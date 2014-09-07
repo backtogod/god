@@ -101,8 +101,11 @@ function Chess:MoveTo(x, y)
 	if self.x == x and self.y == y then
 		return
 	end
-	local event_name = self:GetClassName() .. ".MOVE_TO"
-	Event:FireEvent(event_name, self:GetId(), x, y, self.x, self.y)
+	ViewInterface:WaitMoveComplete(self, x, y, 
+		function()
+			self:SetPosition(x, y)
+		end
+	)
 end
 
 function Chess:SetTemplateId(template_id)

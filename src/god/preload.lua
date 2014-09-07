@@ -21,6 +21,7 @@ AddProjectScript("model/ai/robot.lua")
 AddProjectScript("controller/touch_input.lua")
 
 --Load View Script
+AddProjectScript("view/view_interface.lua")
 AddProjectScript("view/scene/sample_scene.lua")
 AddProjectScript("view/scene/game_scene.lua")
 

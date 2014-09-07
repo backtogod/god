@@ -211,6 +211,13 @@ end
 function EnemyMap:_Init()
 	EnemyChessPool:Init("ENEMY_CHESS")
 	self.obj_pool = EnemyChessPool
+
+	local spec_list = {
+		{2,2,1,3,4,5},
+		{1,1,2,1,2,5},
+		{3,2,3,3,2,5},
+		{3,4,3,3,4,6},
+	}
 	self:InitChess(3, spec_list)
 
 	return 1

@@ -14,6 +14,7 @@ Robot:DeclareListenEvent("GAME.ACTION_OVER", "OnActionEnd")
 Robot:DeclareListenEvent("GAME.ACTION_START", "OnActionStart")
 
 function Robot:_Uninit()
+	ModuleMgr:UnregisterUpdate(self:GetClassName())
 	return 1
 end
 
@@ -45,10 +46,17 @@ function Robot:OnActive(frame)
 			if self.drop_x == self.move_x then
 				local pick_id = self.pick_id
 				local drop_x = self.drop_x
+				local pick_x = self.pick_x
+				self.pick_x = nil
 				self.pick_id = nil
 				self.drop_x = nil
 				self.move_x = nil
-				local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", pick_id, drop_x})				
+				if drop_x == pick_x then
+					local ret_code, result = CommandCenter:ReceiveCommand({"CancelPickChess", pick_id})
+					return self:OnAIActive()
+				else
+					local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", pick_id, drop_x})
+				end
 			elseif self.drop_x > self.move_x then
 				self.move_x = self.move_x + 1
 				local ret_code, result = CommandCenter:ReceiveCommand({"TryMovePickChess", self.pick_id, self.move_x})
@@ -86,9 +94,12 @@ function Robot:ThinkAndOperate()
 	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess", pick_x})
 
 	local drop_x = can_move_list[math.random(1, #can_move_list)]
-	while drop_x == pick_x do
+	local loop_count = 1
+	while drop_x == pick_x and loop_count < 64 do
 		drop_x = can_move_list[math.random(1, #can_move_list)]
+		loop_count = loop_count + 1
 	end
+	self.pick_x = pick_x
 	self.pick_id = pick_id
 	self.move_x = pick_x
 	self.drop_x = drop_x

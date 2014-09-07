@@ -38,6 +38,7 @@ Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
 Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
 
 function Scene:_Uninit( ... )
+	
 	Robot:Uninit()
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
@@ -47,15 +48,28 @@ function Scene:_Uninit( ... )
 	Mover:Uninit()
 	TouchInput:Uninit()
 
+	for _, wait_helper in pairs(self.slave_wait_helper_list) do
+		wait_helper:Uninit()
+	end
+	self.slave_wait_helper_list = nil
+
+	if self.master_wait_helper then
+		self.master_wait_helper:Uninit()
+		self.master_wait_helper = nil
+	end
+
 	return 1
 end
 
 function Scene:_Init()
+	self.master_wait_helper = nil
+	self.slave_wait_helper_list = {}
+
 	assert(self:InitUI() == 1)
 	assert(Mover:Init() == 1)
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
-	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
+	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(PickHelper:Init(1) == 1)
@@ -289,9 +303,11 @@ end
 
 function Scene:OnCancelPickChess(id)
 	local map = GameStateMachine:GetActiveMap()
+
+	local map = GameStateMachine:GetActiveMap()
 	local map_name = map:GetClassName()
 	local chess = self:GetObj("main", map_name, id)
-	local logic_chess = ChessPool:GetById(id)
+	local logic_chess = map.obj_pool:GetById(id)
 	self:SetMapChessPosition(map, id, logic_chess.x, logic_chess.y)
 	chess:setOpacity(255)
 	self:RemoveObj("main", map_name, "copy")
@@ -306,6 +322,61 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 end
 
+function Scene:StartWatch(min_wait_time, call_back)
+	assert(not self.master_wait_helper)
+	self.master_wait_helper = Class:New(WaitHelper, "WatchWaiter")
+	self.master_wait_helper:Init({self.EndWatch, self, call_back})
+	-- self.master_wait_helper:EnableDebug()
+
+	self.master_wait_helper:WaitJob(min_wait_time)
+end
+
+function Scene:EndWatch(call_back)
+	self.master_wait_helper:Uninit()
+	self.master_wait_helper = nil
+	assert(call_back and type(call_back) == "function")
+	call_back()
+end
+
+function Scene:GetMasterWatchWaiter()
+	return self.master_wait_helper
+end
+
+function Scene:NewSlaveWatchWaiter(waiter_name, min_wait_time, max_wait_time, call_back)
+	local master_waiter = self:GetMasterWatchWaiter()
+	assert(master_waiter)
+	assert(not self.slave_wait_helper_list[waiter_name])
+
+	print("new", waiter_name, min_wait_time, max_wait_time, call_back)
+
+	local job_id = master_waiter:WaitJob(max_wait_time)
+	local slave_waite_helper = Class:New(WaitHelper, waiter_name)
+	
+	slave_waite_helper:Init({self.OnSlaveWaiterComplete, self, waiter_name, job_id, call_back})
+	slave_waite_helper:WaitJob(min_wait_time)
+
+	self.slave_wait_helper_list[waiter_name] = slave_waite_helper
+
+	return slave_waite_helper
+end
+
+function Scene:GetSlaveWatchWaiter(waiter_name)
+	return self.slave_wait_helper_list[waiter_name]
+end
+
+function Scene:OnSlaveWaiterComplete(waiter_name, job_id, call_back)
+	local master_waiter = self:GetMasterWatchWaiter()
+	assert(master_waiter)
+	print("complete", waiter_name, min_wait_time, max_wait_time, call_back)
+	self.slave_wait_helper_list[waiter_name]:Uninit()
+	self.slave_wait_helper_list[waiter_name] = nil
+	if call_back then
+		assert(type(call_back) == "function")
+		call_back()
+	end
+	master_waiter:JobComplete(job_id)
+end
+
 function Scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
 	local chess_id = chess:GetId()
 	local map = SelfMap
@@ -316,15 +387,18 @@ function Scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
 	end
 	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
-	assert(self.wait_watch_helper)
-	if not self.wait_move_helper then
-		self.wait_move_helper = Class:New(WaitHelper, "MoveWaiter")
-		self.wait_move_helper:Init({self.OnMoveComplete, self})
-
-		self.wait_move_job_id = self.wait_watch_helper:WaitJob(100)
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+			function()
+				CombineMgr:CheckCombine(SelfMap)
+				CombineMgr:CheckCombine(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
 	end
 	chess_sprite:setLocalZOrder(visible_size.height - y)
-	local waiter = self.wait_move_helper
 	local function func_time_over(id)
 		call_back()
 	end
@@ -333,29 +407,18 @@ function Scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
 	if time <= 0 then
 		time = 0.1
 	end
-	local job_id = waiter:WaitJob(time + 1, func_time_over)	
+	local job_id = slave_waite_helper:WaitJob(time + 1, func_time_over)	
 	local move_action = cc.MoveTo:create(time, cc.p(x, y))
 	local callback_action = cc.CallFunc:create(
 		function()
 			if call_back and type(call_back) == "function" then
 				call_back()
 			end
-			waiter:JobComplete(job_id)
+			slave_waite_helper:JobComplete(job_id)
 		end
 	)
 	local delay_action = cc.DelayTime:create(0.2)
 	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action, delay_action))
-end
-
-function Scene:OnMoveComplete()
-	local job_id = self.wait_move_job_id
-	self.wait_move_helper:Uninit()
-	self.wait_move_helper = nil
-	self.wait_move_job_id = nil
-	CombineMgr:CheckCombine(SelfMap)
-	CombineMgr:CheckCombine(EnemyMap)
-
-	self.wait_watch_helper:JobComplete(job_id)
 end
 
 function Scene:ChangeChessState(chess, state, call_back)
@@ -367,16 +430,19 @@ function Scene:ChangeChessState(chess, state, call_back)
 
 	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
 
-	assert(self.wait_watch_helper)
-	if not self.wait_transform_helper then
-		self.wait_transform_helper = Class:New(WaitHelper, "Waiter")
-		self.wait_transform_helper:Init({self.OnTransformComplete, self, map})
-
-		self.wait_transofrm_job_id = self.wait_watch_helper:WaitJob(100)
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("transform")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("transform", 0.1, 100, 
+			function()
+				Mover:MoveWallArmy(SelfMap)
+				Mover:MoveWallArmy(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
 	end
 
-	local waiter = self.wait_transform_helper
-	local job_id = waiter:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
+	local job_id = slave_waite_helper:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
 
 	local blink_action = cc.Blink:create(Def.TRANSFORM_TIME, 5)
 	local callback_action = cc.CallFunc:create(
@@ -384,21 +450,11 @@ function Scene:ChangeChessState(chess, state, call_back)
 			if call_back and type(call_back) == "function" then
 				call_back()
 			end
-			waiter:JobComplete(job_id)
+			slave_waite_helper:JobComplete(job_id)
 		end
 	)
 	local delay_action = cc.DelayTime:create(0.2)
 	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
-end
-
-function Scene:OnTransformComplete(map)
-	local job_id = self.wait_transofrm_job_id
-	self.wait_transform_helper:Uninit()
-	self.wait_transform_helper = nil
-	self.wait_transofrm_job_id = nil
-	Mover:MoveWallArmy(map)
-
-	self.wait_watch_helper:JobComplete(job_id)
 end
 
 function Scene:OnActionStart(round)
@@ -446,74 +502,15 @@ function Scene:OnComboChanged(combo_count)
 	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
 end
 
+function Scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
+	return self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
+end
+
+function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
+	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+end
+
 function Scene:OnChessAttack(id)
-	if not self.wait_battle_helper then
-		self.wait_battle_helper = Class:New(WaitHelper, "BattleWaiter")
-		self.wait_battle_helper:Init({self.OnBattleComplete, self})
-		self.wait_battle_helper:EnableDebug()
-	end
-	local waiter = self.wait_battle_helper
-	local job_id = waiter:WaitJob(Def.DEFAULT_ATTACK_TIME)
-end
-
-function Scene:StartWatch(min_wait_time, call_back)
-	assert(not self.wait_watch_helper)
-	self.wait_watch_helper = Class:New(WaitHelper, "WatchWaiter")
-	self.wait_watch_helper:Init({self.EndWatch, self, call_back})
-	self.wait_watch_helper:WaitJob(min_wait_time)
-end
-
-function Scene:EndWatch(call_back)
-	self.wait_watch_helper:Uninit()
-	self.wait_watch_helper = nil
-	assert(call_back and type(call_back) == "function")
-	call_back()
-end
-
-function Scene:StartBattle(min_wait_time, call_back)
-	assert(self.wait_watch_helper)
-	assert(not self.wait_battle_helper)
-	self.wait_battle_helper = Class:New(WaitHelper, "BattleWaiter")
-	self.wait_battle_helper:Init({self.OnBattleComplete, self, call_back})
-	self.wait_battle_helper:EnableDebug()
-	
-	self.wait_battle_helper:WaitJob(min_wait_time)
-
-	self.wait_battle_job_id = self.wait_watch_helper:WaitJob(100)
-end
-
-function Scene:OnBattleComplete(call_back)
-	local job_id = self.wait_battle_job_id
-
-	self.wait_battle_helper:Uninit()
-	self.wait_battle_helper = nil
-	self.wait_battle_job_id = nil
-	if call_back then
-		call_back()
-	end
-	self.wait_watch_helper:JobComplete(job_id)
-end
-
-function Scene:RoundStart(min_wait_time, round, call_back)
-	assert(self.wait_watch_helper)
-	assert(not self.wait_round_start_helper)
-	self.wait_round_start_helper = Class:New(WaitHelper, "RoundWaiter")
-	self.wait_round_start_helper:Init({self.OnRoundStartFinish, self, call_back})
-	self.wait_round_start_helper:EnableDebug()
-	
-	self.wait_round_start_helper:WaitJob(min_wait_time)
-
-	self.wait_round_start_job_id = self.wait_watch_helper:WaitJob(100)
-end
-
-function Scene:OnRoundStartFinish(call_back)
-	local job_id = self.wait_round_start_job_id
-
-	self.wait_round_start_helper:Uninit()
-	self.wait_round_start_helper = nil
-	self.wait_round_start_job_id = nil
-	if call_back then
-		call_back()
-	end
-	self.wait_watch_helper:JobComplete(job_id)
+	local wait_helper = self:GetSlaveWatchWaiter("battle")
+	local job_id = wait_helper:WaitJob(Def.DEFAULT_ATTACK_TIME)
 end

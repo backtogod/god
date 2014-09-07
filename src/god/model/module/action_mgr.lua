@@ -13,8 +13,11 @@ ActionMgr:DeclareListenEvent("COMBINE.WALL", "OnCombo")
 ActionMgr:DeclareListenEvent("COMBINE.ARMY", "OnCombo")
 
 function ActionMgr:_Uninit( ... )
+	self.is_init = nil
+	self.combo_count = nil
 	self.raw_round_num = nil
 	self.rest_round_num = nil
+	self.round_count = nil
 
 	return 1
 end
@@ -25,6 +28,7 @@ function ActionMgr:_Init(raw_round_num)
 	self.rest_round_num = 0
 	self.combo_count = 0
 	local function action_start()
+		self.is_init = 1
 		if self:GetRestRoundNum() > 0 then
 			Event:FireEvent("GAME.AI_ACTIVE")
 		else
@@ -36,6 +40,9 @@ function ActionMgr:_Init(raw_round_num)
 end
 
 function ActionMgr:OnCombo()
+	if self.is_init ~= 1 then
+		return
+	end
 	self.combo_count = self.combo_count + 1
 	if self.combo_count > 1 then
 		self:ChangeRestRoundNum(1)
@@ -89,7 +96,7 @@ function ActionMgr:NextRound()
 	)
 	ViewInterface:WaitRoundStartFinish(
 		0.5,
-		self.round_count,
+		100,
 		function ()
 			Battle:BattleStart()
 		end

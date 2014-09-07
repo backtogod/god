@@ -125,7 +125,16 @@ function Chess:TransformtToWall()
 	if self:TryCall("SetState", Def.STATE_WALL) ~= 1 then
 		return 0
 	end
-	
+	local config = ChessConfig:GetData("wall_1")
+	if not config then
+		assert(false)
+		return
+	end
+	ViewInterface:WaitChangeStateComplete(self, Def.STATE_ARMY, 
+		function()
+			self:SetTemplateId("wall_1")
+		end
+	)
 	return 1
 end
 
@@ -134,9 +143,13 @@ function Chess:TransformtToArmy()
 		assert(false)
 		return 0
 	end
-	local data = ChessConfig:GetData(self.template_id)
-	assert(data.wait_round)
-	self:SetWaitRound(data.wait_round)
+	ViewInterface:WaitChangeStateComplete(self, Def.STATE_ARMY, 
+		function()
+			local data = ChessConfig:GetData(self.template_id)
+			assert(data.wait_round)
+			self:SetWaitRound(data.wait_round)
+		end
+	)
 	return 1
 end
 

@@ -17,16 +17,16 @@ Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
-Scene:DeclareListenEvent("CHESS.CHANGE_STATE", "OnChessChangeState")
 Scene:DeclareListenEvent("CHESS.ATTACK", "OnChessAttack")
+Scene:DeclareListenEvent("CHESS.WAIT_ROUND_CHANGED", "OnChessWaitRoundChanged")
 
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnEnemyChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDisplayPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
-Scene:DeclareListenEvent("ENEMY_CHESS.CHANGE_STATE", "OnEnemyChessChangeState")
 Scene:DeclareListenEvent("ENEMY_CHESS.ATTACK", "OnChessAttack")
+Scene:DeclareListenEvent("ENEMY_CHESS.WAIT_ROUND_CHANGED", "OnEnemyChessWaitRoundChanged")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
@@ -176,7 +176,8 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 	local chess_sprite = self:GenerateChessSprite(config.image)
 	self:AddObj("main", SelfMap:GetClassName(), id, chess_sprite)
 	self:SetMapChessPosition(SelfMap, id, logic_x, Def.MAP_HEIGHT)
-	self:MoveChessToPosition(SelfMap, id, logic_x, logic_y)
+	local chess = ChessPool:GetById(id)
+	self:MoveChessToPosition(chess, logic_x, logic_y)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -188,7 +189,9 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 	local chess_sprite = self:GenerateChessSprite(config.image)
 	self:AddObj("main", EnemyMap:GetClassName(), id, chess_sprite)
 	self:SetMapChessPosition(EnemyMap, id, logic_x, Def.MAP_HEIGHT)
-	self:MoveChessToPosition(EnemyMap, id, logic_x, logic_y)
+
+	local chess = EnemyChessPool:GetById(id)
+	self:MoveChessToPosition(chess, logic_x, logic_y)
 end
 
 function Scene:OnChessRemove(id)
@@ -261,6 +264,16 @@ function Scene:OnEnemyChessSetTemplate(id, template_id)
 	self:AddObj("main", EnemyMap:GetClassName(), id, sprite)
 end
 
+function Scene:OnChessWaitRoundChanged(id, round)
+	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
+	chess_sprite:setColor(cc.c3b(0, 255 - round * 20))
+end
+
+function Scene:OnEnemyChessWaitRoundChanged(id, round)
+	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
+	chess_sprite:setColor(cc.c3b(0, 255 - round * 50))
+end
+
 function Scene:OnPickChess(id, logic_x, logic_y)
 	local map = GameStateMachine:GetActiveMap()
 	local map_name = map:GetClassName()
@@ -295,13 +308,20 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 end
 
-function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y, call_back)
+function Scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
+	local chess_id = chess:GetId()
+	local map = SelfMap
+	if chess:GetClassName() == "ENEMY_CHESS" then
+		map = EnemyMap
+	else
+		map = SelfMap
+	end
 	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	assert(self.wait_watch_helper)
 	if not self.wait_move_helper then
 		self.wait_move_helper = Class:New(WaitHelper, "MoveWaiter")
-		self.wait_move_helper:Init({self.OnMoveComplete, self, map})
+		self.wait_move_helper:Init({self.OnMoveComplete, self})
 
 		self.wait_move_job_id = self.wait_watch_helper:WaitJob(100)
 	end
@@ -329,44 +349,25 @@ function Scene:MoveChessToPosition(map, chess_id, logic_x, logic_y, call_back)
 	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action, delay_action))
 end
 
-function Scene:OnMoveComplete(map)
+function Scene:OnMoveComplete()
 	local job_id = self.wait_move_job_id
 	self.wait_move_helper:Uninit()
 	self.wait_move_helper = nil
 	self.wait_move_job_id = nil
-	CombineMgr:CheckCombine(map)
+	CombineMgr:CheckCombine(SelfMap)
+	CombineMgr:CheckCombine(EnemyMap)
 
 	self.wait_watch_helper:JobComplete(job_id)
 end
 
-function Scene:OnChessChangeState(id, old_state, state)
-	return self:ChangeChessState(SelfMap, id, state)
-end
-
-
-function Scene:OnEnemyChessChangeState(id, old_state, state)
-	return self:ChangeChessState(EnemyMap, id, state)
-end
-
-function Scene:ChangeChessState(map, id, state)
-	local transform = nil
-	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
-	if state == Def.STATE_WALL then
-		--TODO wall template get
-		local config = ChessConfig:GetData("wall_1")
-		if not config then
-			assert(false)
-			return
-		end
-		transform = function()
-			local logic_chess = map.obj_pool:GetById(id)
-			logic_chess:SetTemplateId("wall_1")
-		end
-	elseif state == Def.STATE_ARMY then
-		transform = function()
-			chess_sprite:setColor(cc.c3b(0, 255, 0))
-		end
+function Scene:ChangeChessState(chess, state, call_back)
+	local id = chess:GetId()
+	local map = SelfMap
+	if chess:GetClassName() == "ENEMY_CHESS" then
+		map = EnemyMap
 	end
+
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
 
 	assert(self.wait_watch_helper)
 	if not self.wait_transform_helper then
@@ -377,12 +378,14 @@ function Scene:ChangeChessState(map, id, state)
 	end
 
 	local waiter = self.wait_transform_helper
-	local job_id = waiter:WaitJob(Def.TRANSPORT_TIME + 1, transform)
+	local job_id = waiter:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
 
-	local blink_action = cc.Blink:create(Def.TRANSPORT_TIME, 5)
+	local blink_action = cc.Blink:create(Def.TRANSFORM_TIME, 5)
 	local callback_action = cc.CallFunc:create(
 		function()
-			transform()
+			if call_back and type(call_back) == "function" then
+				call_back()
+			end
 			waiter:JobComplete(job_id)
 		end
 	)

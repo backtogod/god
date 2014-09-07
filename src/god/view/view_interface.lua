@@ -19,13 +19,13 @@ function ViewInterface:WaitWatchEnd(call_back)
 end
 
 function ViewInterface:WaitMoveComplete(chess, logic_x, logic_y, call_back)
-	local map = GameStateMachine:GetActiveMap()
 	local view_scene = SceneMgr:GetCurrentScene()
-	view_scene:MoveChessToPosition(map, chess:GetId(), logic_x, logic_y, call_back)
+	return view_scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
 end
 
-function ViewInterface:WaitTransformComplete(call_back)
-	-- body
+function ViewInterface:WaitChangeStateComplete(chess, state, call_back)
+	local view_scene = SceneMgr:GetCurrentScene()
+	return view_scene:ChangeChessState(chess, state, call_back)
 end
 
 function ViewInterface:WaitBattleFinish(call_back)

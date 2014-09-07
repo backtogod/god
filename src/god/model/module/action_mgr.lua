@@ -24,18 +24,14 @@ function ActionMgr:_Init(raw_round_num)
 	self.raw_round_num = raw_round_num
 	self.rest_round_num = 0
 	self.combo_count = 0
-	Event:FireEvent("GAME.START_WATCH")
-	ViewInterface:WaitWatchEnd( 
-		function()
-			Event:FireEvent("GAME.END_WATCH")
-			if self:GetRestRoundNum() > 0 then
-				Event:FireEvent("GAME.AI_ACTIVE")
-			else
-				self:NextRound()
-			end
+	local function action_start()
+		if self:GetRestRoundNum() > 0 then
+			Event:FireEvent("GAME.AI_ACTIVE")
+		else
+			self:NextRound()
 		end
-	)
-
+	end
+	ViewInterface:WaitWatchEnd(0.5, action_start)
 	return 1
 end
 
@@ -63,10 +59,9 @@ end
 function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 	self.combo_count = 0
 	self:ChangeRestRoundNum(-1)
-	Event:FireEvent("GAME.START_WATCH")
-	ViewInterface:WaitWatchEnd( 
-		function()
-			Event:FireEvent("GAME.END_WATCH")
+	ViewInterface:WaitWatchEnd(
+		0.5,
+		function()		
 			if self:GetRestRoundNum() > 0 then
 				Event:FireEvent("GAME.AI_ACTIVE")
 			else
@@ -85,11 +80,20 @@ function ActionMgr:NextRound()
 	self.combo_count = 0
 	self.rest_round_num = self.raw_round_num
 	self.round_count = self.round_count + 1
-	local function call_back()
-		Event:FireEvent("GAME.ACTION_START", self.round_count)
-		Event:FireEvent("GAME.AI_ACTIVE")
-	end
-	Battle:BattleStart(call_back)
+	ViewInterface:WaitWatchEnd( 
+		0.5,
+		function()
+			Event:FireEvent("GAME.ACTION_START", self.round_count)
+			Event:FireEvent("GAME.AI_ACTIVE")
+		end
+	)
+	ViewInterface:WaitRoundStartFinish(
+		0.5,
+		self.round_count,
+		function ()
+			Battle:BattleStart()
+		end
+	)
 end
 
 ActionMgr.IS_COST_STEP = {

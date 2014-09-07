@@ -21,16 +21,10 @@ end
 
 function Battle:BattleStart(call_back)
 	local map = GameStateMachine:GetActiveMap()
+	ViewInterface:WaitBattleFinish(0.5, call_back)
 	local army_list = map:GetArmyList()
 	for _, chess in pairs(army_list) do
 		chess:ChangeWaitRound(-1)
 	end
-	self.call_back = call_back
-	Event:FireEvent("BATTLE.START")
 	return 1
-end
-
-function Battle:BattleComplete( ... )
-	self.call_back()
-	self.call_back = nil
 end

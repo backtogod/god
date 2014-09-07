@@ -37,8 +37,6 @@ Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
 Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
 Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
 
-Scene:DeclareListenEvent("BATTLE.START", "OnBattleStart")
-
 function Scene:_Uninit( ... )
 	Robot:Uninit()
 	EnemyMap:Uninit()
@@ -448,24 +446,6 @@ function Scene:OnComboChanged(combo_count)
 	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
 end
 
-function Scene:OnBattleStart()
-	if not self.wait_battle_helper then
-		print("batte_end")
-		self:OnBattleComplete()
-	end
-end
-
-function Scene:OnBattleComplete()
-	if self.wait_battle_helper then
-		self.wait_battle_helper:Uninit()
-		self.wait_battle_helper = nil
-	end
-	if GameStateMachine:IsWatching() == 1 then
-		Event:FireEvent("GAME.END_WATCH")
-		Battle:BattleComplete()
-	end
-end
-
 function Scene:OnChessAttack(id)
 	if not self.wait_battle_helper then
 		self.wait_battle_helper = Class:New(WaitHelper, "BattleWaiter")
@@ -476,14 +456,64 @@ function Scene:OnChessAttack(id)
 	local job_id = waiter:WaitJob(Def.DEFAULT_ATTACK_TIME)
 end
 
-function Scene:StartWatch(call_back)
+function Scene:StartWatch(min_wait_time, call_back)
 	assert(not self.wait_watch_helper)
 	self.wait_watch_helper = Class:New(WaitHelper, "WatchWaiter")
 	self.wait_watch_helper:Init({self.EndWatch, self, call_back})
+	self.wait_watch_helper:WaitJob(min_wait_time)
 end
 
 function Scene:EndWatch(call_back)
 	self.wait_watch_helper:Uninit()
 	self.wait_watch_helper = nil
+	assert(call_back and type(call_back) == "function")
 	call_back()
+end
+
+function Scene:StartBattle(min_wait_time, call_back)
+	assert(self.wait_watch_helper)
+	assert(not self.wait_battle_helper)
+	self.wait_battle_helper = Class:New(WaitHelper, "BattleWaiter")
+	self.wait_battle_helper:Init({self.OnBattleComplete, self, call_back})
+	self.wait_battle_helper:EnableDebug()
+	
+	self.wait_battle_helper:WaitJob(min_wait_time)
+
+	self.wait_battle_job_id = self.wait_watch_helper:WaitJob(100)
+end
+
+function Scene:OnBattleComplete(call_back)
+	local job_id = self.wait_battle_job_id
+
+	self.wait_battle_helper:Uninit()
+	self.wait_battle_helper = nil
+	self.wait_battle_job_id = nil
+	if call_back then
+		call_back()
+	end
+	self.wait_watch_helper:JobComplete(job_id)
+end
+
+function Scene:RoundStart(min_wait_time, round, call_back)
+	assert(self.wait_watch_helper)
+	assert(not self.wait_round_start_helper)
+	self.wait_round_start_helper = Class:New(WaitHelper, "RoundWaiter")
+	self.wait_round_start_helper:Init({self.OnRoundStartFinish, self, call_back})
+	self.wait_round_start_helper:EnableDebug()
+	
+	self.wait_round_start_helper:WaitJob(min_wait_time)
+
+	self.wait_round_start_job_id = self.wait_watch_helper:WaitJob(100)
+end
+
+function Scene:OnRoundStartFinish(call_back)
+	local job_id = self.wait_round_start_job_id
+
+	self.wait_round_start_helper:Uninit()
+	self.wait_round_start_helper = nil
+	self.wait_round_start_job_id = nil
+	if call_back then
+		call_back()
+	end
+	self.wait_watch_helper:JobComplete(job_id)
 end

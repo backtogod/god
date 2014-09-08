@@ -69,7 +69,7 @@ function Scene:_Init()
 	assert(Mover:Init() == 1)
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
-	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
+	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(PickHelper:Init(1) == 1)
@@ -117,6 +117,9 @@ function Scene:InitUI()
 	label_combo:setVisible(false)
 	Ui:AddElement(ui_frame, "LABEL", "combo", visible_size.width / 2, visible_size.height / 2, label_combo)
 
+	local label_round_tip = cc.Label:createWithSystemFont("ROUND X", "Arial", 100)
+	label_round_tip:setVisible(false)
+	Ui:AddElement(ui_frame, "LABEL", "round_tip", visible_size.width / 2, visible_size.height / 2, label_round_tip)
 	-- self:DrawGrip()
 
 	return 1
@@ -503,7 +506,33 @@ function Scene:OnComboChanged(combo_count)
 end
 
 function Scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
-	return self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
+	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
+	local job_id = round_waiter:WaitJob(max_wait_time)
+
+	local ui_frame = self:GetUI()
+	local label = Ui:GetElement(ui_frame, "LABEL", "round_tip")
+	if not label then
+		assert(false)
+		return
+	end
+	label:setVisible(true)
+	if GameStateMachine:IsInEnemyAction() == 1 then
+		label:setString("对方回合")
+	else
+		label:setString("轮到你行动了")		
+	end
+	label:setScale(0.1)
+
+	local scale_to = cc.ScaleTo:create(0.8, 1)
+	local delay = cc.DelayTime:create(1)
+	local call_back = cc.CallFunc:create(
+		function()
+			label:setVisible(false)
+			round_waiter:JobComplete(job_id)
+		end
+	)
+	label:stopAllActions()
+	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
 end
 
 function Scene:StartBattle(min_wait_time, max_wait_time, call_back)

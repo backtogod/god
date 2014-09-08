@@ -39,6 +39,10 @@ function ActionMgr:_Init(raw_round_num)
 	return 1
 end
 
+function ActionMgr:GetRoundCount()
+	return self.round_count
+end
+
 function ActionMgr:OnCombo()
 	if self.is_init ~= 1 then
 		return

@@ -185,7 +185,17 @@ function Chess:Evolution(chess_food)
 	return 1
 end
 
+function Chess:GetOppositeMap()
+	if self:GetClassName() == "CHESS" then
+		return EnemyMap
+	else
+		return SelfMap
+	end
+end
+
 function Chess:Attack()
+	local map = self:GetOppositeMap()
+	local target_id = map:GetCell(self.x, 1)
 	local event_name = self:GetClassName() .. ".ATTACK"
-	Event:FireEvent(event_name, self:GetId())
+	Event:FireEvent(event_name, self:GetId(), target_id)
 end

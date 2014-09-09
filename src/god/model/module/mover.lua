@@ -81,6 +81,21 @@ function Mover:MoveWallArmy(real_map)
 	self:CoordinatePosition(sim_map, real_map)
 end
 
+function Mover:RemoveMapHole(real_map)
+	local sim_map = self.sim_map
+	sim_map.obj_pool = real_map.obj_pool
+	sim_map.cell_list = Lib:Copy2DTB(real_map.cell_list)
+	sim_map.cell_pool = Lib:Copy2DTB(real_map.cell_pool)
+
+	for x = 1, Def.MAP_WIDTH do
+		self:RemoveHole(sim_map, x)
+	end
+
+	for x = 1, Def.MAP_WIDTH do
+		self:RemoveHole(sim_map, x)
+	end
+	self:CoordinatePosition(sim_map, real_map)
+end
 
 function Mover:CoordinatePosition(sim_map, real_map)
 	for chess_id, info in pairs(sim_map.cell_list) do

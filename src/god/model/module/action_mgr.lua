@@ -98,11 +98,15 @@ function ActionMgr:NextRound()
 			Event:FireEvent("GAME.AI_ACTIVE")
 		end
 	)
+	local function MoveChess()
+		Mover:RemoveMapHole(SelfMap)
+		Mover:RemoveMapHole(EnemyMap)
+	end
 	ViewInterface:WaitRoundStartFinish(
 		0.5,
 		100,
 		function ()
-			Battle:BattleStart()
+			Battle:BattleStart(MoveChess)
 		end
 	)
 end

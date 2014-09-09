@@ -17,7 +17,7 @@ Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
 Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
-Scene:DeclareListenEvent("CHESS.ATTACK", "OnChessAttack")
+Scene:DeclareListenEvent("CHESS.ATTACK", "OnSelfChessAttack")
 Scene:DeclareListenEvent("CHESS.WAIT_ROUND_CHANGED", "OnChessWaitRoundChanged")
 
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
@@ -25,7 +25,7 @@ Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_POSITION", "OnEnemyChessSetPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDisplayPosition")
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
-Scene:DeclareListenEvent("ENEMY_CHESS.ATTACK", "OnChessAttack")
+Scene:DeclareListenEvent("ENEMY_CHESS.ATTACK", "OnEnemyChessAttack")
 Scene:DeclareListenEvent("ENEMY_CHESS.WAIT_ROUND_CHANGED", "OnEnemyChessWaitRoundChanged")
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
@@ -539,7 +539,27 @@ function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
 	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
 end
 
-function Scene:OnChessAttack(id)
+function Scene:OnSelfChessAttack(id)
+	return self:ChessMoveAttack(SelfMap, id, visible_size.height)
+end
+
+function Scene:OnEnemyChessAttack(id)
+	return self:ChessMoveAttack(EnemyMap, id, 0)
+end
+
+function Scene:ChessMoveAttack(map, id, target_y)
 	local wait_helper = self:GetSlaveWatchWaiter("battle")
-	local job_id = wait_helper:WaitJob(Def.DEFAULT_ATTACK_TIME)
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
+	local x, y = chess_sprite:getPosition()
+	local time = math.abs(target_y - y) / 500
+	local job_id = wait_helper:WaitJob(time + 1)
+	local move_action = cc.MoveTo:create(time, cc.p(x, target_y))
+	local callback_action = cc.CallFunc:create(
+		function()
+			map.obj_pool:Remove(id)
+			wait_helper:JobComplete(job_id)
+		end
+	)
+	chess_sprite:stopAllActions()
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
 end

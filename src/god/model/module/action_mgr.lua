@@ -92,7 +92,7 @@ function ActionMgr:NextRound()
 	self.rest_round_num = self.raw_round_num
 	self.round_count = self.round_count + 1
 	ViewInterface:WaitWatchEnd( 
-		0.5,
+		0.1,
 		function()
 			Event:FireEvent("GAME.ACTION_START", self.round_count)
 			Event:FireEvent("GAME.AI_ACTIVE")

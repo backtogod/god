@@ -48,11 +48,11 @@ ChessConfig.template = {
 	},
 	["wall_2"] = {
 		image = "god/wall_2.png",
-		base_life = 6,
+		base_life = 7,
 	},
 	["wall_3"] = {
 		image = "god/wall_3.png",
-		base_life = 9,
+		base_life = 15,
 	},
 }
 

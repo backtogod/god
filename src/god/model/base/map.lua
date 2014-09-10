@@ -156,7 +156,7 @@ function SelfMap:_Init()
 
 	local spec_list = {
 		{2,2,1,4,4,},
-		{1,1,2,6,6,4},
+		{1,2,2,6,6,4},
 		{3,2,3,3,2,6},
 	}
 	self:InitChess(3, spec_list)
@@ -213,8 +213,8 @@ function EnemyMap:_Init()
 	self.obj_pool = EnemyChessPool
 
 	local spec_list = {
-		{2,2,1,3,4,5},
-		{1,1,2,1,2,5},
+		{2,2,2,3,4,5},
+		{1,1,1,2,2,5},
 		{3,2,3,3,2,5},
 		{3,4,3,3,4,6},
 	}

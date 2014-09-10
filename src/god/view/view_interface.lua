@@ -23,10 +23,10 @@ function ViewInterface:WaitWatchEnd(min_wait_time, call_back)
 	)
 end
 
-function ViewInterface:WaitMoveComplete(chess, logic_x, logic_y, call_back)
+function ViewInterface:WaitMoveComplete(chess, x, y, call_back)
 	assert(GameStateMachine:IsWatching() == 1)
 	local view_scene = SceneMgr:GetCurrentScene()
-	return view_scene:MoveChessToPosition(chess, logic_x, logic_y, call_back)
+	return view_scene:MoveChessToPosition(chess, x, y, call_back)
 end
 
 function ViewInterface:WaitChangeStateComplete(chess, state, call_back)
@@ -45,4 +45,10 @@ function ViewInterface:WaitBattleFinish(min_wait_time, max_wait_time, call_back)
 	assert(GameStateMachine:IsWatching() == 1)
 	local view_scene = SceneMgr:GetCurrentScene()
 	return view_scene:StartBattle(min_wait_time, max_wait_time, call_back)
+end
+
+function ViewInterface:WaitChessAttack(chess, target_chess, call_back)
+	assert(GameStateMachine:IsWatching() == 1)
+	local view_scene = SceneMgr:GetCurrentScene()
+	return view_scene:ChessAttack(chess, target_chess, call_back)
 end

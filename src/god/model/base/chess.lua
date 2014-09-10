@@ -29,7 +29,8 @@ function Chess:_Init(id, template_id, x, y)
 
 	local data = ChessConfig:GetData(template_id)
 	self.life = data.base_life
-	self.max_life = data.base_life
+	self.step_life = data.base_life * 3
+	self.max_life =self.step_life * (data.wait_round + 1)
 	self:AddComponent("action", "ACTION")
 	self.wait_round = -1
 	return 1
@@ -43,10 +44,15 @@ function Chess:GetMaxLife()
 	return self.max_life
 end
 
+function Chess:GetStepLife()
+	return self.step_life
+end
+
 function Chess:SetLife(life)
+	local old_life = self.life
 	self.life = life
 	local event_name = self:GetClassName() .. ".LIFE_CHANGED"
-	Event:FireEvent(event_name, self:GetId(), life)
+	Event:FireEvent(event_name, self:GetId(), life, old_life)
 end
 
 function Chess:ChangeLife(change_value)
@@ -97,13 +103,15 @@ function Chess:SetPosition(x, y)
 	Event:FireEvent(event_name, self:GetId(), x, y, old_x, old_y)
 end
 
-function Chess:MoveTo(x, y)
+function Chess:MoveTo(logic_x, logic_y)
 	if self.x == x and self.y == y then
 		return
 	end
+	local map = self:GetMap()
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	ViewInterface:WaitMoveComplete(self, x, y, 
 		function()
-			self:SetPosition(x, y)
+			self:SetPosition(logic_x, logic_y)
 		end
 	)
 end
@@ -193,9 +201,55 @@ function Chess:GetOppositeMap()
 	end
 end
 
+function Chess:GetMap()
+	if self:GetClassName() == "CHESS" then
+		return SelfMap
+	else
+		return EnemyMap
+	end
+end
+
 function Chess:Attack()
-	local map = self:GetOppositeMap()
-	local target_id = map:GetCell(self.x, 1)
-	local event_name = self:GetClassName() .. ".ATTACK"
-	Event:FireEvent(event_name, self:GetId(), target_id)
+	local opposite_map = self:GetOppositeMap()
+	local self_map = self:GetMap()
+	local target_id = nil
+	local target_x, target_y = nil, nil
+	for i = 1, Def.MAP_HEIGHT do
+		target_id = opposite_map:GetCell(self.x, i)
+		if target_id > 0 then
+			target_x, target_y = opposite_map:Logic2Pixel(self.x, i - 1)
+			break
+		end
+	end
+	if not target_x or not target_y then
+		target_x, target_y = opposite_map:Logic2Pixel(self.x, Def.MAP_HEIGHT + 2)
+	end
+	ViewInterface:WaitMoveComplete(self, target_x, target_y, 
+		function()
+			if target_id <= 0 then
+				--TODO attack player
+				self_map.obj_pool:Remove(self:GetId())
+				return
+			end
+			self:AttackEnemy(target_id)
+			if self:GetLife() <= 0 then
+				self_map.obj_pool:Remove(self:GetId())
+				return
+			end
+			return self:Attack()
+		end
+	)
+end
+
+function Chess:AttackEnemy(target_id)
+	local opposite_map = self:GetOppositeMap()
+	local target_chess = opposite_map.obj_pool:GetById(target_id)
+	local attack_damage = self:GetLife()
+	local defence_damage = target_chess:GetLife()
+	print(attack_damage, defence_damage)
+	target_chess:ChangeLife(-attack_damage)
+	self:ChangeLife(-defence_damage)
+	if target_chess:TryCall("GetState") == Def.STATE_NORMAL or target_chess:GetLife() <= 0 then
+		opposite_map.obj_pool:Remove(target_id)
+	end	
 end

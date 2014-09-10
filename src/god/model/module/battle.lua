@@ -24,6 +24,7 @@ function Battle:BattleStart(call_back)
 	ViewInterface:WaitBattleFinish(0.5, 100, call_back)
 	local army_list = map:GetArmyList()
 	for _, chess in pairs(army_list) do
+		chess:ChangeLife(chess:GetStepLife())
 		chess:ChangeWaitRound(-1)
 	end
 	return 1

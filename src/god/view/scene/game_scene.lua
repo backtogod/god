@@ -122,6 +122,49 @@ function Scene:InitUI()
 	Ui:AddElement(ui_frame, "LABEL", "round_tip", visible_size.width / 2, visible_size.height / 2, label_round_tip)
 	-- self:DrawGrip()
 
+	local element_list = {
+ 		{
+	    	{
+				item_name = "Spawn Chess",
+	        	callback_function = function()
+	        		if GameStateMachine:CanOperate() ~= 1 then
+	        			return
+	        		end
+	        		ViewInterface:WaitWatchEnd(0.5, 
+	        			function()
+	        				ActionMgr:ChangeRestRoundNum(-1)
+	        			end
+	        		)
+	        		CommandCenter:ReceiveCommand({"SpawnChess"})	        		
+	        	end,
+	        },
+	        {
+				item_name = "End Action",
+	        	callback_function = function()
+	        		if GameStateMachine:CanOperate() ~= 1 then
+	        			return
+	        		end
+	        		CommandCenter:ReceiveCommand({"EndAction"})
+	        	end,
+	        },
+	    },
+	}
+	
+
+    local menu_array, width, height = Menu:GenerateByString(element_list, 
+    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 20}
+    )
+    if height > visible_size.height then
+    	self:SetHeight(height)
+    end
+    local ui_frame = self:GetUI()
+    local menu_tools = cc.Menu:create(unpack(menu_array))
+    local exist_menu = Ui:GetElement(ui_frame, "MENU", "operate")
+    if exist_menu then
+    	Ui:RemoveElement(ui_frame, "MENU", "operate")
+    end
+    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width / 2, 150, menu_tools)
+
 	return 1
 end
 
@@ -500,8 +543,8 @@ function Scene:ChessAttack(chess, target_chess, call_back)
 	local callback_action = cc.CallFunc:create(
 		function()
 			if call_back and type(call_back) == "function" then
-				call_back()
-			end
+				call_back(
+)			end
 			slave_waite_helper:JobComplete(job_id)
 			if battle_waiter_helper and battle_job_id then
 				battle_waiter_helper:JobComplete(battle_job_id)

@@ -231,12 +231,18 @@ function Chess:Attack()
 				self_map.obj_pool:Remove(self:GetId())
 				return
 			end
-			self:AttackEnemy(target_id)
-			if self:GetLife() <= 0 then
-				self_map.obj_pool:Remove(self:GetId())
-				return
-			end
-			return self:Attack()
+			local target_chess = opposite_map.obj_pool:GetById(target_id)
+			ViewInterface:WaitChessAttack(self, target_chess, 
+				function()
+					self:AttackEnemy(target_id)
+					if self:GetLife() <= 0 then
+						self_map.obj_pool:Remove(self:GetId())
+						return
+					end
+					return self:Attack()
+				end
+			)
+			
 		end
 	)
 end
@@ -246,7 +252,6 @@ function Chess:AttackEnemy(target_id)
 	local target_chess = opposite_map.obj_pool:GetById(target_id)
 	local attack_damage = self:GetLife()
 	local defence_damage = target_chess:GetLife()
-	print(attack_damage, defence_damage)
 	target_chess:ChangeLife(-attack_damage)
 	self:ChangeLife(-defence_damage)
 	if target_chess:TryCall("GetState") == Def.STATE_NORMAL or target_chess:GetLife() <= 0 then

@@ -429,8 +429,7 @@ function Scene:MoveChessToPosition(chess, x, y, call_back)
 			end
 		end
 	)
-	local delay_action = cc.DelayTime:create(0.2)
-	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action, delay_action))
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
 end
 
 function Scene:ChangeChessState(chess, state, call_back)
@@ -467,6 +466,50 @@ function Scene:ChangeChessState(chess, state, call_back)
 	)
 	local delay_action = cc.DelayTime:create(0.2)
 	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
+end
+
+function Scene:ChessAttack(chess, target_chess, call_back)
+	local chess_id = chess:GetId()
+	local map = SelfMap
+	if chess:GetClassName() == "ENEMY_CHESS" then
+		map = EnemyMap
+	else
+		map = SelfMap
+	end
+	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+			function()
+				CombineMgr:CheckCombine(SelfMap)
+				CombineMgr:CheckCombine(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
+	end
+	local job_id = slave_waite_helper:WaitJob(10, func_time_over)
+	local function func_time_over(id)
+		call_back()
+	end
+	local battle_waiter_helper = self:GetSlaveWatchWaiter("battle")
+	local battle_job_id = nil
+	if battle_waiter_helper then
+		battle_job_id = battle_waiter_helper:WaitJob(11)
+	end
+	local callback_action = cc.CallFunc:create(
+		function()
+			if call_back and type(call_back) == "function" then
+				call_back()
+			end
+			slave_waite_helper:JobComplete(job_id)
+			if battle_waiter_helper and battle_job_id then
+				battle_waiter_helper:JobComplete(battle_job_id)
+			end
+		end
+	)
+	local delay_action = cc.DelayTime:create(0.5)
+	chess_sprite:runAction(cc.Sequence:create(delay_action, callback_action))
 end
 
 function Scene:OnActionStart(round)

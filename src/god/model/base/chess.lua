@@ -201,6 +201,15 @@ function Chess:GetOppositeMap()
 	end
 end
 
+function Chess:AttackEnemyPlayer()
+	local attack_damage = self:GetLife()
+	if self:GetClassName() == "CHESS" then
+		Player:ChangeCurEnemyHP(-attack_damage)
+	else
+		Player:ChangeCurSelfHP(-attack_damage)
+	end
+end
+
 function Chess:GetMap()
 	if self:GetClassName() == "CHESS" then
 		return SelfMap
@@ -227,8 +236,12 @@ function Chess:Attack()
 	ViewInterface:WaitMoveComplete(self, target_x, target_y, 
 		function()
 			if target_id <= 0 then
-				--TODO attack player
-				self_map.obj_pool:Remove(self:GetId())
+				ViewInterface:WaitChessAttack(self, target_chess, 
+					function()
+						self:AttackEnemyPlayer()
+						self_map.obj_pool:Remove(self:GetId())
+					end
+				)
 				return
 			end
 			local target_chess = opposite_map.obj_pool:GetById(target_id)
@@ -242,7 +255,6 @@ function Chess:Attack()
 					return self:Attack()
 				end
 			)
-			
 		end
 	)
 end

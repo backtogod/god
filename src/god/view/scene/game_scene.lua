@@ -43,6 +43,7 @@ function Scene:_Uninit( ... )
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
 	PickHelper:Uninit()
+	Player:Uninit()
 	GameStateMachine:Uninit()
 	CommandCenter:Uninit()
 	Mover:Uninit()
@@ -70,6 +71,7 @@ function Scene:_Init()
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
+	assert(Player:Init(100, 100) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(PickHelper:Init(1) == 1)
@@ -130,9 +132,14 @@ function Scene:InitUI()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
 	        		end
+	        		ActionMgr:ChangeRestRoundNum(-1)
 	        		ViewInterface:WaitWatchEnd(0.5, 
 	        			function()
-	        				ActionMgr:ChangeRestRoundNum(-1)
+	        				if ActionMgr:GetRestRoundNum() > 0 then
+								Event:FireEvent("GAME.AI_ACTIVE")
+							else
+								ActionMgr:NextRound()
+							end
 	        			end
 	        		)
 	        		CommandCenter:ReceiveCommand({"SpawnChess"})	        		
@@ -664,3 +671,13 @@ function Scene:_OnLifeChanged(sprite, change_value)
 	end
 	FlyText:VerticalShake(layer_main, sprite, "fonts/img_font.fnt", text, param)
 end
+
+-- function Scene:OnChessLifeChanged(id, new_life, old_life)
+-- 	local sprite = self:GetObj("main", SelfMap:GetClassName(), id)
+-- 	return self:_OnLifeChanged(sprite, new_life - old_life)
+-- end
+
+-- function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
+-- 	local sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
+-- 	return self:_OnLifeChanged(sprite, new_life - old_life)
+-- end

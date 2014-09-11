@@ -4,6 +4,7 @@ AddProjectScript("define.lua")
 --Load Model Script
 AddProjectScript("model/base/map.lua")
 AddProjectScript("model/base/chess.lua")
+AddProjectScript("model/base/player.lua")
 
 AddProjectScript("model/rule/combine.lua")
 AddProjectScript("model/rule/pick_rule.lua")

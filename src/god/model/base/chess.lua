@@ -231,7 +231,7 @@ function Chess:Attack()
 		end
 	end
 	if not target_x or not target_y then
-		target_x, target_y = opposite_map:Logic2Pixel(self.x, Def.MAP_HEIGHT + 2)
+		target_x, target_y = opposite_map:Logic2Pixel(self.x, Def.MAP_HEIGHT)
 	end
 	ViewInterface:WaitMoveComplete(self, target_x, target_y, 
 		function()

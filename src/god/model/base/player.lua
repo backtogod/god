@@ -39,6 +39,10 @@ function Player:GetCurSelfHP()
 	return self.cur_self_hp
 end
 
+function Player:GetMaxSelfHP()
+	return self.max_self_hp
+end
+
 function Player:ChangeCurSelfHP(change_value)
 	local hp = self:GetCurSelfHP()
 	local new_hp = hp + change_value
@@ -57,6 +61,10 @@ end
 
 function Player:GetCurEnemyHP()
 	return self.cur_enemy_hp
+end
+
+function Player:GetMaxEnemyHP()
+	return self.max_enemy_hp
 end
 
 function Player:ChangeCurEnemyHP(change_value)

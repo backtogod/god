@@ -37,6 +37,9 @@ Scene:DeclareListenEvent("GAME.ROUND_REST_NUM_CHANGED", "OnRoundRestNumChanged")
 Scene:DeclareListenEvent("GAME_STATE.CHANGE", "OnGameStateChanged")
 Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
 
+Scene:DeclareListenEvent("PLAYER.SET_SELF_HP", "OnSetSelfPlayerHP")
+Scene:DeclareListenEvent("PLAYER.SET_ENEMY_HP", "OnSetEnemyPlayerHP")
+
 function Scene:_Uninit( ... )
 	
 	Robot:Uninit()
@@ -84,37 +87,11 @@ end
 
 function Scene:InitUI()
 	self:AddReturnMenu()
-	self:AddReloadMenu()
+	self:AddReloadMenu() 
 
 	self:SetBackGroundImage({"god/map.png"}, 0)
 
 	local ui_frame = self:GetUI()
-
-	local label_round = cc.Label:createWithSystemFont("Round X", "Arial", 40)
-	label_round:setTextColor(cc.c4b(100, 200, 255, 255))
-	label_round:setAnchorPoint(cc.p(0, 0.5))
-	-- label_round:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 50, label_round)
-
-	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 40)
-	label_state:setTextColor(cc.c4b(100, 200, 255, 255))
-	label_state:setAnchorPoint(cc.p(0, 0.5))
-	-- label_state:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 50, label_state)
-
-	local label_rest_num_title = cc.Label:createWithSystemFont("剩余可行动次数:", nil, 40)
-	label_rest_num_title:setTextColor(cc.c4b(100, 200, 255, 255))
-	label_rest_num_title:setAnchorPoint(cc.p(0, 0.5))
-	-- label_rest_num_title:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RestRoundNumTitle", 50, visible_size.height - 120 , label_rest_num_title)
-
-	local rect = label_rest_num_title:getBoundingBox()
-	local label_rest_num = cc.Label:createWithSystemFont("0", "Arial", 40)
-	label_rest_num:setTextColor(cc.c4b(100, 200, 255, 255))
-	label_rest_num:setAnchorPoint(cc.p(0, 0.5))
-	-- label_rest_num:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 10, visible_size.height - 120 , label_rest_num)
-
 	local label_combo = cc.Label:createWithSystemFont("COMBO X", "Arial", 100)
 	label_combo:setVisible(false)
 	Ui:AddElement(ui_frame, "LABEL", "combo", visible_size.width / 2, visible_size.height / 2, label_combo)
@@ -122,12 +99,51 @@ function Scene:InitUI()
 	local label_round_tip = cc.Label:createWithSystemFont("ROUND X", "Arial", 100)
 	label_round_tip:setVisible(false)
 	Ui:AddElement(ui_frame, "LABEL", "round_tip", visible_size.width / 2, visible_size.height / 2, label_round_tip)
-	-- self:DrawGrip()
 
+
+	self:InitDebugUI()	
+	-- self:DrawGrip()	
+	self:InitButtonMenu()
+	self:InitPlayerHPUI()
+
+	return 1
+end
+
+function Scene:InitDebugUI()
+	local ui_frame = self:GetUI()
+
+	local label_round = cc.Label:createWithSystemFont("Round X", "Arial", 40)
+	label_round:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_round:setAnchorPoint(cc.p(0, 0.5))
+	-- label_round:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 100, label_round)
+
+	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 40)
+	label_state:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_state:setAnchorPoint(cc.p(0, 0.5))
+	-- label_state:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 100, label_state)
+
+	local label_rest_num_title = cc.Label:createWithSystemFont("可行动次数:", nil, 40)
+	label_rest_num_title:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_rest_num_title:setAnchorPoint(cc.p(0, 0.5))
+	-- label_rest_num_title:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNumTitle", 50, visible_size.height / 2, label_rest_num_title)
+
+	local rect = label_rest_num_title:getBoundingBox()
+	local label_rest_num = cc.Label:createWithSystemFont("0", "Arial", 40)
+	label_rest_num:setTextColor(cc.c4b(100, 200, 255, 255))
+	label_rest_num:setAnchorPoint(cc.p(0, 0))
+	-- label_rest_num:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 10, rect.y , label_rest_num)
+end
+
+function Scene:InitButtonMenu()
+	local ui_frame = self:GetUI()
 	local element_list = {
  		{
 	    	{
-				item_name = "Spawn Chess",
+				item_name = "Spawn",
 	        	callback_function = function()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
@@ -145,8 +161,10 @@ function Scene:InitUI()
 	        		CommandCenter:ReceiveCommand({"SpawnChess"})	        		
 	        	end,
 	        },
+	    },
+	    {
 	        {
-				item_name = "End Action",
+				item_name = "End",
 	        	callback_function = function()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
@@ -159,7 +177,7 @@ function Scene:InitUI()
 	
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
-    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 20}
+    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 40}
     )
     if height > visible_size.height then
     	self:SetHeight(height)
@@ -170,9 +188,44 @@ function Scene:InitUI()
     if exist_menu then
     	Ui:RemoveElement(ui_frame, "MENU", "operate")
     end
-    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width / 2, 150, menu_tools)
+    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width - width / 2 - 20, 150, menu_tools)
+end
 
-	return 1
+function Scene:InitPlayerHPUI()
+	local ui_frame = self:GetUI()
+
+	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1)
+	local progress_self_bg = cc.Sprite:create("god/xuetiao-di.png")
+	progress_self_bg:setScale(4)
+	progress_self_bg:setAnchorPoint(cc.p(0, 0.5))
+	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self_bg", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self_bg)
+
+	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)	
+	progress_self:setScale(4)
+	progress_self:setAnchorPoint(cc.p(0, 0.5))
+	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self)
+
+	local rect = progress_self:getBoundingBox()
+	local label_self_hp = cc.Label:createWithSystemFont(string.format("%3d / %3d", 100, 100), "Arial", 40)
+	label_self_hp:setTextColor(cc.c4b(100, 200, 255, 255))
+	Ui:AddElement(ui_frame, "LABEL", "self_hp", rect.x + rect.width / 2, rect.y + rect.height / 2, label_self_hp)
+
+	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1)
+
+	local progress_enemy_bg = cc.Sprite:create("god/xuetiao-di.png")
+	progress_enemy_bg:setScale(4)
+	progress_enemy_bg:setAnchorPoint(cc.p(0, 0.5))
+	Ui:AddElement(ui_frame, "PROGRESS_BAR", "enemy_bg", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_enemy_bg)
+
+	local progress_enemy = ProgressBar:GenerateByFile("god/xuetiao-hong.png", 100)
+	progress_enemy:setScale(4)
+	progress_enemy:setAnchorPoint(cc.p(0, 0.5))
+	Ui:AddElement(ui_frame, "PROGRESS_BAR", "enemy", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_enemy)
+
+	local rect = progress_enemy:getBoundingBox()
+	local label_enemy_hp = cc.Label:createWithSystemFont(string.format("%3d / %3d", 100, 100), "Arial", 40)
+	label_enemy_hp:setTextColor(cc.c4b(100, 200, 255, 255))
+	Ui:AddElement(ui_frame, "LABEL", "enemy_hp", rect.x + rect.width / 2, rect.y + rect.height / 2, label_enemy_hp)
 end
 
 function Scene:DrawGrip( ... )
@@ -651,19 +704,19 @@ function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
 	return self:_OnLifeChanged(sprite, new_life - old_life)
 end
 
-function Scene:_OnLifeChanged(sprite, change_value)
+function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)
 	local layer_main = self:GetLayer("main")
 	local text = tostring(change_value)
 	local param = {
 		color     = "red",
-		percent_x = 0,
-		percent_y = 0.5,
+		percent_x = percent_x or 0,
+		percent_y = percent_y or 0.5,
 		up_time   = 1,
 		up_y      = 40,
 		fade_time = 0.5,
 		zorder	  = 1000,
 		-- fade_up_y = 10,
-		text_scale = 1.2,
+		text_scale = text_scale or 1.2,
 	}
 	if change_value > 0 then
 		param.color = "green"
@@ -672,12 +725,28 @@ function Scene:_OnLifeChanged(sprite, change_value)
 	FlyText:VerticalShake(layer_main, sprite, "fonts/img_font.fnt", text, param)
 end
 
--- function Scene:OnChessLifeChanged(id, new_life, old_life)
--- 	local sprite = self:GetObj("main", SelfMap:GetClassName(), id)
--- 	return self:_OnLifeChanged(sprite, new_life - old_life)
--- end
+function Scene:OnSetSelfPlayerHP(new_life, old_life)
+	local change_value = new_life - old_life
+	local ui_frame = self:GetUI()
+	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "self")
+	local max_life = Player:GetMaxSelfHP()
+	local percentage = (new_life / max_life) * 100
+	progress_bar:setPercentage(percentage)
+	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
 
--- function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
--- 	local sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
--- 	return self:_OnLifeChanged(sprite, new_life - old_life)
--- end
+	local label = Ui:GetElement(ui_frame, "LABEL", "self_hp")
+	label:setString(string.format("%3d / %3d", new_life, max_life))
+end
+
+function Scene:OnSetEnemyPlayerHP(new_life, old_life)
+	local change_value = new_life - old_life
+	local ui_frame = self:GetUI()
+	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "enemy")
+	local max_life = Player:GetMaxEnemyHP()
+	local percentage = (new_life / max_life) * 100
+	progress_bar:setPercentage(percentage)
+	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
+
+	local label = Ui:GetElement(ui_frame, "LABEL", "enemy_hp")
+	label:setString(string.format("%3d / %3d", new_life, max_life))
+end

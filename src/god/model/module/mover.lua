@@ -119,10 +119,18 @@ function Mover:CanMoveTo(map, x_src, y_src, x_dest, y_dest)
 	local chess_dest = map.obj_pool:GetById(id_dest)
 	local src_state = chess_src:TryCall("GetState")
 	local dest_state = chess_dest:TryCall("GetState")
-	if (dest_state == Def.STATE_WALL and src_state ~= Def.STATE_WALL)
-		or (dest_state == Def.STATE_ARMY and src_state == Def.STATE_NORMAL) then
-
-		return 0
+	if dest_state == Def.STATE_WALL then
+		if src_state ~= Def.STATE_WALL then
+			return 0
+		end
+	elseif dest_state == Def.STATE_ARMY then
+		if src_state == Def.STATE_NORMAL then
+			return 0
+		elseif src_state == Def.STATE_ARMY then
+			if CombineMgr:CanMerge(chess_src, chess_dest) ~= 1 then
+				return 0
+			end
+		end
 	end
 	return 1
 end

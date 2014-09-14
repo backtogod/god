@@ -91,6 +91,31 @@ function Scene:InitUI()
 
 	self:SetBackGroundImage({"god/map.png"}, 0)
 
+	local highlight_green = cc.DrawNode:create()
+	local height = Def.MAP_OFFSET_Y + Def.MAP_CELL_HEIGHT * Def.MAP_HEIGHT
+	highlight_green:drawPolygon(
+		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height), 
+		cc.p(Def.MAP_CELL_WIDTH * 0.5, height), cc.p(Def.MAP_CELL_WIDTH * 0.5, -height),},
+		4, 
+		cc.c4b(0, 1, 0, 0.2),
+		1,
+		cc.c4b(0, 0, 0, 0)
+	)
+	highlight_green:setVisible(false)
+	self:AddObj("main", "draw", "highlight_green", highlight_green)
+
+	local highlight_red = cc.DrawNode:create()
+	local height = Def.MAP_OFFSET_Y + Def.MAP_CELL_HEIGHT * Def.MAP_HEIGHT
+	highlight_red:drawPolygon(
+		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height), 
+		cc.p(Def.MAP_CELL_WIDTH * 0.5, height), cc.p(Def.MAP_CELL_WIDTH * 0.5, -height),},
+		4, 
+		cc.c4b(1, 0, 0, 0.2),
+		1,
+		cc.c4b(0, 0, 0, 0)
+	)
+	highlight_red:setVisible(false)
+	self:AddObj("main", "draw", "highlight_red", highlight_red)
 
 	self:InitDebugUI()	
 	-- self:DrawGrip()	
@@ -274,15 +299,61 @@ function Scene:SetMapChessPosition(map, id, logic_x, logic_y)
 end
 
 function Scene:OnTouchBegan(x, y)
-	return TouchInput:OnTouchBegan(x, y)
+	local result = TouchInput:OnTouchBegan(x, y)
+	if result == 1 then
+		local map = GameStateMachine:GetActiveMap()
+		local logic_x, logic_y = map:Pixel2Logic(x, y)
+		if logic_x < 1 then
+			logic_x = 1
+		elseif logic_x > Def.MAP_WIDTH then
+			logic_x = Def.MAP_WIDTH
+		end
+		local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
+		local highlight_green = self:GetObj("main", "draw", "highlight_green")
+		highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
+		highlight_green:setVisible(true)
+	end
 end
 
 function Scene:OnTouchMoved(x, y)
-	return TouchInput:OnTouchMoved(x, y)
+	local result = TouchInput:OnTouchMoved(x, y)
+	if not result then
+		return
+	end
+	local map = GameStateMachine:GetActiveMap()
+	local logic_x, logic_y = map:Pixel2Logic(x, y)
+	if logic_x < 1 then
+		logic_x = 1
+	elseif logic_x > Def.MAP_WIDTH then
+		logic_x = Def.MAP_WIDTH
+	end
+	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
+	if result == 1 then
+		local highlight_green = self:GetObj("main", "draw", "highlight_green")
+		highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
+		highlight_green:setVisible(true)
+
+		local highlight_red = self:GetObj("main", "draw", "highlight_red")
+		highlight_red:setVisible(false)
+	elseif result == 0 then
+		local highlight_red = self:GetObj("main", "draw", "highlight_red")
+		highlight_red:setPosition(highlight_x, visible_size.height * 0.5)
+		highlight_red:setVisible(true)
+
+		local highlight_green = self:GetObj("main", "draw", "highlight_green")
+		highlight_green:setVisible(false)
+	end
 end
 
 function Scene:OnTouchEnded(x, y)
-	return TouchInput:OnTouchEnded(x, y)
+	local result = TouchInput:OnTouchEnded(x, y)
+	if result == 1 then
+		local highlight_green = self:GetObj("main", "draw", "highlight_green")
+		highlight_green:setVisible(false)
+
+		local highlight_red = self:GetObj("main", "draw", "highlight_red")
+		highlight_red:setVisible(false)
+	end
 end
 
 function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
@@ -460,6 +531,8 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	assert(chess)
 	chess:setOpacity(255)
 	self:RemoveObj("main", map:GetClassName(), "copy")
+	local x, y = map:Logic2Pixel(logic_x, Def.MAP_HEIGHT)
+	chess:setPosition(x, y)
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 end
 

@@ -51,8 +51,6 @@ function CommandCenter:_PickChess(map, logic_x, logic_y)
 	if chess_id then
 		local logic_chess = map.obj_pool:GetById(chess_id)
 		PickHelper:Pick(chess_id, logic_x, pick_y)
-		local event_name = logic_chess:GetClassName() .. ".SET_DISPLAY_POSITION"
-		Event:FireEvent(event_name, chess_id, logic_x, Def.MAP_HEIGHT + 1)
 		return chess_id
 	end
 end
@@ -62,21 +60,23 @@ function CommandCenter:_CancelPickChess(map, id)
 end
 
 function CommandCenter:_TryMovePickChess(map, id, logic_x)
-	-- local logic_y = Mover:GetMoveablePosition(map, logic_x, 
-	-- 	function(check_chess_id)
-	-- 		if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
-	-- 			return 1
-	-- 		end
-	-- 		return 0
-	-- 	end
-	-- )
-	-- if logic_y <= 0 then
-	-- 	return 0
-	-- end
+	local logic_y = Mover:GetMoveablePosition(map, logic_x, 
+		function(check_chess_id)
+			if (check_chess_id and check_chess_id <= 0) or check_chess_id == id then
+				return 1
+			end
+			return 0
+		end
+	)
 	local logic_chess = map.obj_pool:GetById(id)
 	local event_name = logic_chess:GetClassName() .. ".SET_DISPLAY_POSITION"
-	Event:FireEvent(event_name, id, logic_x, Def.MAP_HEIGHT + 1)
-	return 1
+	if logic_y > 0 then
+		Event:FireEvent(event_name, id, logic_x, logic_y)
+		return 1
+	else
+		Event:FireEvent(event_name, id, logic_chess.x, logic_chess.y)
+		return 0
+	end
 end
 
 function CommandCenter:_TryDropChess(map, id, logic_x)

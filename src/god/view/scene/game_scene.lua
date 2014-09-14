@@ -116,13 +116,13 @@ function Scene:InitDebugUI()
 	label_round:setTextColor(cc.c4b(100, 200, 255, 255))
 	label_round:setAnchorPoint(cc.p(0, 0.5))
 	-- label_round:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 100, label_round)
+	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 50, label_round)
 
 	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 40)
 	label_state:setTextColor(cc.c4b(100, 200, 255, 255))
 	label_state:setAnchorPoint(cc.p(0, 0.5))
 	-- label_state:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 100, label_state)
+	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 50, label_state)
 
 	local label_rest_num_title = cc.Label:createWithSystemFont("可行动次数:", nil, 40)
 	label_rest_num_title:setTextColor(cc.c4b(100, 200, 255, 255))
@@ -177,7 +177,7 @@ function Scene:InitButtonMenu()
 	
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
-    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 40}
+    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 30}
     )
     if height > visible_size.height then
     	self:SetHeight(height)
@@ -188,19 +188,19 @@ function Scene:InitButtonMenu()
     if exist_menu then
     	Ui:RemoveElement(ui_frame, "MENU", "operate")
     end
-    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width - width / 2 - 20, 150, menu_tools)
+    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width - width / 2 - 20, 130, menu_tools)
 end
 
 function Scene:InitPlayerHPUI()
 	local ui_frame = self:GetUI()
 
-	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1)
+	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1.5)
 	local progress_self_bg = cc.Sprite:create("god/xuetiao-di.png")
 	progress_self_bg:setScale(4)
 	progress_self_bg:setAnchorPoint(cc.p(0, 0.5))
 	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self_bg", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self_bg)
 
-	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)	
+	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-hong.png", 100)	
 	progress_self:setScale(4)
 	progress_self:setAnchorPoint(cc.p(0, 0.5))
 	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self)
@@ -210,7 +210,7 @@ function Scene:InitPlayerHPUI()
 	label_self_hp:setTextColor(cc.c4b(100, 200, 255, 255))
 	Ui:AddElement(ui_frame, "LABEL", "self_hp", rect.x + rect.width / 2, rect.y + rect.height / 2, label_self_hp)
 
-	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1)
+	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1.5)
 
 	local progress_enemy_bg = cc.Sprite:create("god/xuetiao-di.png")
 	progress_enemy_bg:setScale(4)
@@ -296,7 +296,7 @@ function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
 	self:SetMapChessPosition(SelfMap, id, logic_x, Def.MAP_HEIGHT)
 	local chess = ChessPool:GetById(id)
 	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
-	return self:MoveChessToPosition(chess, x, y)
+	return self:MoveChessToPosition(chess, x, y, Def.CHESS_MOVE_SPEED)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
@@ -311,7 +311,7 @@ function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
 
 	local chess = EnemyChessPool:GetById(id)
 	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
-	return self:MoveChessToPosition(chess, x, y)
+	return self:MoveChessToPosition(chess, x, y, Def.CHESS_MOVE_SPEED)
 end
 
 function Scene:OnChessRemove(id)
@@ -386,12 +386,45 @@ end
 
 function Scene:OnChessWaitRoundChanged(id, round)
 	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	chess_sprite:setColor(cc.c3b(0, 255 - round * 20))
+	local label = self:GetObj("chess", "wait_round", id)
+	if round > 0 then
+		if not label then
+			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
+			local rect = chess_sprite:getBoundingBox()
+			local scale_x = chess_sprite:getScaleX()
+			label:setPosition(rect.width * 0.5 / scale_x, rect.height * 0.5)
+			self:AddObj("chess", "wait_round", id, label)
+			chess_sprite:addChild(label)
+		end
+		label:setString(tostring(round))
+	else
+		if label then
+			chess_sprite:removeChild(label, true)
+			self:RemoveObj("chess", "wait_round", id)
+		end
+	end
 end
 
 function Scene:OnEnemyChessWaitRoundChanged(id, round)
 	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
-	chess_sprite:setColor(cc.c3b(0, 255 - round * 50))
+	local label = self:GetObj("enemy_chess", "wait_round", id)
+	if round > 0 then
+		if not label then
+			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
+			label:setAnchorPoint(cc.p(0.5, 0.5))
+			local rect = chess_sprite:getBoundingBox()
+			local scale_x = chess_sprite:getScaleX()
+			label:setPosition(rect.width * 0.5 / scale_x, rect.height * 0.5)
+			self:AddObj("enemy_chess", "wait_round", id, label)
+			chess_sprite:addChild(label)
+		end
+		label:setString(tostring(round))
+	else
+		if label then
+			chess_sprite:removeChild(label, true)
+			self:RemoveObj("enemy_chess", "wait_round", id)
+		end
+	end
 end
 
 function Scene:OnPickChess(id, logic_x, logic_y)
@@ -485,7 +518,7 @@ function Scene:OnSlaveWaiterComplete(waiter_name, job_id, call_back)
 	master_waiter:JobComplete(job_id)
 end
 
-function Scene:MoveChessToPosition(chess, x, y, call_back)
+function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
 	local chess_id = chess:GetId()
 	local map = SelfMap
 	if chess:GetClassName() == "ENEMY_CHESS" then
@@ -510,7 +543,7 @@ function Scene:MoveChessToPosition(chess, x, y, call_back)
 		call_back()
 	end
 	local start_x, start_y = chess_sprite:getPosition()
-	local time = math.abs(y - start_y) / Def.CHESS_MOVE_SPEED
+	local time = math.abs(y - start_y) / speed
 	if time <= 0 then
 		time = 0.1
 	end
@@ -696,12 +729,62 @@ end
 
 function Scene:OnChessLifeChanged(id, new_life, old_life)
 	local sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	return self:_OnLifeChanged(sprite, new_life - old_life)
+	self:_OnLifeChanged(sprite, new_life - old_life)
+
+	local chess = ChessPool:GetById(id)
+	if chess:TryCall("GetState") == Def.STATE_NORMAL then
+		return
+	end
+	local progress_hp = self:GetObj("chess", "hp", id)
+	if not progress_hp then
+		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
+		local rect = sprite:getBoundingBox()
+		local scale_x = sprite:getScaleX()
+		local progress_rect = progress_hp:getBoundingBox()
+		progress_hp:setScaleX((rect.width - 4) / progress_rect.width)
+		progress_hp:setPosition(rect.width * 0.5 / scale_x, rect.height)
+		self:AddObj("chess", "hp", id, progress_hp)
+		
+		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
+		progress_bg:setScaleX(rect.width / progress_rect.width)
+		progress_bg:setPosition(rect.width * 0.5 / scale_x, rect.height)
+		
+		sprite:addChild(progress_bg)
+		sprite:addChild(progress_hp)
+	end
+	local life = chess:GetLife()
+	local max_life = chess:GetMaxLife()
+	progress_hp:setPercentage((life / max_life) * 100)
 end
 
 function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
 	local sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
-	return self:_OnLifeChanged(sprite, new_life - old_life)
+	self:_OnLifeChanged(sprite, new_life - old_life)
+
+	local chess = EnemyChessPool:GetById(id)
+	if chess:TryCall("GetState") == Def.STATE_NORMAL then
+		return
+	end
+	local progress_hp = self:GetObj("enemy_chess", "hp", id)
+	if not progress_hp then
+		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
+		local rect = sprite:getBoundingBox()
+		local scale_x = sprite:getScaleX()
+		local progress_rect = progress_hp:getBoundingBox()
+		progress_hp:setScaleX((rect.width - 4) / progress_rect.width)
+		progress_hp:setPosition(rect.width * 0.5 / scale_x, rect.height)
+		self:AddObj("enemy_chess", "hp", id, progress_hp)
+		
+		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
+		progress_bg:setScaleX(rect.width / progress_rect.width)
+		progress_bg:setPosition(rect.width * 0.5 / scale_x, rect.height)
+
+		sprite:addChild(progress_bg)
+		sprite:addChild(progress_hp)
+	end
+	local life = chess:GetLife()
+	local max_life = chess:GetMaxLife()
+	progress_hp:setPercentage((life / max_life) * 100)
 end
 
 function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)

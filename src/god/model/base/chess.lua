@@ -109,7 +109,7 @@ function Chess:MoveTo(logic_x, logic_y)
 	end
 	local map = self:GetMap()
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
-	ViewInterface:WaitMoveComplete(self, x, y, 
+	ViewInterface:WaitMoveComplete(self, x, y, Def.CHESS_MOVE_SPEED,
 		function()
 			self:SetPosition(logic_x, logic_y)
 		end
@@ -233,7 +233,7 @@ function Chess:Attack()
 	if not target_x or not target_y then
 		target_x, target_y = opposite_map:Logic2Pixel(self.x, Def.MAP_HEIGHT)
 	end
-	ViewInterface:WaitMoveComplete(self, target_x, target_y, 
+	ViewInterface:WaitMoveComplete(self, target_x, target_y, Def.CHESS_BATTLE_MOVE_SPEED,
 		function()
 			if target_id <= 0 then
 				ViewInterface:WaitChessAttack(self, target_chess, 

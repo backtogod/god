@@ -709,8 +709,8 @@ function Scene:ChessAttack(chess, target_chess, call_back)
 	local callback_action = cc.CallFunc:create(
 		function()
 			if call_back and type(call_back) == "function" then
-				call_back(
-)			end
+				call_back()
+			end
 			slave_waite_helper:JobComplete(job_id)
 			if battle_waiter_helper and battle_job_id then
 				battle_waiter_helper:JobComplete(battle_job_id)
@@ -760,36 +760,6 @@ function Scene:OnComboChanged(combo_count)
 	local call_back = cc.CallFunc:create(
 		function()
 			label:setVisible(false)
-		end
-	)
-	label:stopAllActions()
-	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
-end
-
-function Scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
-	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
-	local job_id = round_waiter:WaitJob(max_wait_time)
-
-	local ui_frame = self:GetUI()
-	local label = Ui:GetElement(ui_frame, "LABEL", "round_tip")
-	if not label then
-		assert(false)
-		return
-	end
-	label:setVisible(true)
-	if GameStateMachine:IsInEnemyAction() == 1 then
-		label:setString("对方回合")
-	else
-		label:setString("轮到你行动了")		
-	end
-	label:setScale(0.1)
-
-	local scale_to = cc.ScaleTo:create(0.8, 1)
-	local delay = cc.DelayTime:create(1)
-	local call_back = cc.CallFunc:create(
-		function()
-			label:setVisible(false)
-			round_waiter:JobComplete(job_id)
 		end
 	)
 	label:stopAllActions()
@@ -898,4 +868,30 @@ function Scene:OnSetEnemyPlayerHP(new_life, old_life)
 
 	local label = Ui:GetElement(ui_frame, "LABEL", "enemy_hp")
 	label:setString(string.format("%3d / %3d", new_life, max_life))
+end
+
+function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
+	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
+	local job_id = round_waiter:WaitJob(max_wait_time)
+
+	local ui_frame = self:GetUI()
+	local label = Ui:GetElement(ui_frame, "LABEL", "round_tip")
+	if not label then
+		assert(false)
+		return
+	end
+	label:setVisible(true)
+	label:setString(text_msg)
+	label:setScale(0.1)
+
+	local action_scale_to = cc.ScaleTo:create(0.8, 1)
+	local action_delay = cc.DelayTime:create(1)
+	local action_call_back = cc.CallFunc:create(
+		function()
+			label:setVisible(false)
+			round_waiter:JobComplete(job_id)
+		end
+	)
+	label:stopAllActions()
+	label:runAction(cc.Sequence:create(action_scale_to, action_delay, action_call_back))
 end

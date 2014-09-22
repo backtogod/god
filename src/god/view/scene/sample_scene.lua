@@ -17,9 +17,17 @@ function Scene:MainSample()
 	local element_list = {
  		{
 	    	{
-				item_name = "scene sample",
+				item_name = "VS Scene",
 	        	callback_function = function()
-	        		SceneMgr:LoadScene("GameScene", "GameScene")
+	        		SceneMgr:LoadScene("VSScene", "VSScene")
+	        	end,
+	        },
+	    },
+	    {
+	        {
+				item_name = "Boss Scene",
+	        	callback_function = function()
+	        		SceneMgr:LoadScene("VSScene", "VSScene")
 	        	end,
 	        },
 	    },

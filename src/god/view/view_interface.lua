@@ -35,10 +35,10 @@ function ViewInterface:WaitChangeStateComplete(chess, state, call_back)
 	return view_scene:ChangeChessState(chess, state, call_back)
 end
 
-function ViewInterface:WaitPlayTipFinish(min_wait_time, max_wait_time, text_msg, call_back)
+function ViewInterface:WaitRoundStartFinish(min_wait_time, max_wait_time, call_back)
 	assert(GameStateMachine:IsWatching() == 1)
 	local view_scene = SceneMgr:GetCurrentScene()
-	return view_scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
+	return view_scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
 end
 
 function ViewInterface:WaitBattleFinish(min_wait_time, max_wait_time, call_back)

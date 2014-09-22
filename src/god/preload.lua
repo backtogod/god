@@ -16,7 +16,8 @@ AddProjectScript("model/module/mover.lua")
 AddProjectScript("model/module/command_center.lua")
 AddProjectScript("model/module/battle.lua")
 
-AddProjectScript("model/ai/robot.lua")
+AddProjectScript("model/ai/boss_robot.lua")
+AddProjectScript("model/ai/vs_robot.lua")
 
 --Load Controller Script
 AddProjectScript("controller/touch_input.lua")
@@ -24,8 +25,11 @@ AddProjectScript("controller/touch_input.lua")
 --Load View Script
 AddProjectScript("view/view_interface.lua")
 AddProjectScript("view/scene/sample_scene.lua")
-AddProjectScript("view/scene/game_scene.lua")
+AddProjectScript("view/scene/vs_scene.lua")
+AddProjectScript("view/scene/boss_scene.lua")
 
 --Load Game Config
 AddProjectScript("config/chess_config.lua")
+
+--$(SRCROOT)/../../../../external/lua/luajit/prebuilt/ios
 

@@ -77,9 +77,36 @@ function VSRobot:ThinkAndOperate()
 	end
 	print("............Start Think")
 	local map = GameStateMachine:GetActiveMap()
+	assert(not self.pick_id)
+
+	local pick_x, drop_x = self:SelectPick(map)
+
+	self.pick_x = pick_x
+	self.pick_id = pick_id
+	self.move_x = pick_x
+	self.drop_x = drop_x
+	print("............Think Result", pick_id, "Move", pick_x, drop_x)
+end
+
+function VSRobot:SelectPick(map)
+	local width, height = map:GetSize()
+
+	local pick_x = nil
+	local move_x = nil
+
+	pick_x, move_x = self:FindCanCombineArmy(map)
+	if pick_x and move_x then
+		return pick_x, move_x
+	end
+	pick_x, move_x = self:RandomAction(map)
+	if pick_x and move_x then
+		return pick_x, move_x
+	end
+end
+
+function VSRobot:RandomAction(map)
 	local can_move_list = {}
 	local can_pick_list = {}
-	assert(not self.pick_id)
 	for logic_x = 1, Def.MAP_WIDTH do
 		local chess_id = PickRule:GetCanPick(map, logic_x)
 		if chess_id then
@@ -99,11 +126,39 @@ function VSRobot:ThinkAndOperate()
 		drop_x = can_move_list[math.random(1, #can_move_list)]
 		loop_count = loop_count + 1
 	end
-	self.pick_x = pick_x
-	self.pick_id = pick_id
-	self.move_x = pick_x
-	self.drop_x = drop_x
-	print("............Think Result", pick_id, "Move", pick_x, drop_x)
+	return pick_x, drop_x
+end
+
+function VSRobot:FindChessByTemplate(map, template_id)
+	for x = 1, width do
+		local top_id, top_y = PickRule:GetCanPick(map, x)
+		if top_id then
+			local top_chess = map.obj_pool:GetById(top_id)
+			if top_chess:GetTemplateId() == template_id then
+				return x, top_id, top_y
+			end
+		end
+	end
+end
+
+function VSRobot:FindCanCombineArmy(map)
+	for logic_x = 1, width do
+		local top_id, top_y = PickRule:GetCanPick(map, logic_x)
+		if top_id then
+			local next_id = map:GetCell(logic_x, top_y - 1)
+			if next_id and next_id > 0 then
+				local top_chess = map.obj_pool:GetById(top_id)
+				local template_id = top_chess:GetTemplateId()
+				local next_chess = map.obj_pool:GetById(next_id)
+				if next_chess:TryCall("GetState") == Def.STATE_NORMAL and template_id == next_chess:GetTemplateId() then
+					local find_x, find_id = self:FindChessByTemplate(map, template_id)
+					if find_x and find_id then
+						return find_x, logic_x
+					end
+				end
+			end
+		end
+	end
 end
 
 function VSRobot:OnAIActive()

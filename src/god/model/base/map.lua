@@ -12,12 +12,15 @@ end
 
 function Map:_Init(width, height)
 	self.cell_pool = {}
+	self.height_list = {}
 	for i = 1, width do
+		self.height_list[i] = 0
 		self.cell_pool[i] = {}
 		for j = 1, height do
 			self.cell_pool[i][j] = 0
 		end
 	end
+
 	self.width = width
 	self.height = height
 	self.cell_list = {}
@@ -28,6 +31,10 @@ function Map:_Uninit( ... )
 	self.cell_list = nil
 	self.cell_pool = nil
 	return 1
+end
+
+function Map:GetSize()
+	return self.width, self.height
 end
 
 function Map:IsValid(x, y)
@@ -62,12 +69,15 @@ function Map:SetCell(x, y, value)
 		self.cell_list[value].x = x
 		self.cell_list[value].y = y
 	end
+	-- if not self:IsValid(x, y + 1) or self.cell_pool[x][y + 1] == 0 then
+	-- 	self:SetValidHeight(x, y)
+	-- end
 	return 1
 end
 
 function Map:GetCell(x, y)
 	if self:IsValid(x, y) ~= 1 then
-		return
+		return 0
 	end
 	return self.cell_pool[x][y]
 end
@@ -137,6 +147,13 @@ function Map:InitChess(max_wave, spec_list)
 	end
 end
 
+function Map:SetValidHeight(x, height)
+	self.height_list[x] = height
+end
+
+function Map:GetValidHeight(x)
+	return self.height_list[x]
+end
 
 if not SelfMap then
 	SelfMap = Class:New(Map, "SELF_MAP")

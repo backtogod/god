@@ -73,7 +73,7 @@ function Scene:_Init()
 	assert(Mover:Init() == 1)
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
-	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
+	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
 	assert(Player:Init(100, 100) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
@@ -388,11 +388,17 @@ end
 function Scene:OnChessRemove(id)
 	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
 	self:RemoveObj("main", SelfMap:GetClassName(), id)
+	if self:GetObj(SelfMap:GetClassName(), "hp", id) then
+		self:RemoveObj(SelfMap:GetClassName(), "hp", id)
+	end
 end
 
 function Scene:OnEnemyChessRemove(id)
 	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
 	self:RemoveObj("main", EnemyMap:GetClassName(), id)
+	if self:GetObj(EnemyMap:GetClassName(), "hp", id) then
+		self:RemoveObj(EnemyMap:GetClassName(), "hp", id)
+	end
 end
 
 function Scene:OnChessSetPosition(id, logic_x, logic_y)
@@ -848,8 +854,10 @@ function Scene:_OnChessLifeChanged(chess, new_life, old_life)
 		sprite:addChild(progress_bg)
 		sprite:addChild(progress_hp)
 	end
+
 	local life = chess:GetLife()
 	local max_life = chess:GetMaxLife()
+
 	progress_hp:setPercentage((life / max_life) * 100)
 end
 

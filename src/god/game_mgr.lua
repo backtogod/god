@@ -42,9 +42,9 @@ function GameMgr:_Init()
 
     Log:Init(Log.LOG_DEBUG, Log.LOG_INFO)
    
-    Debug:AddWhiteEvent("PICKHELPER.PICK", Log.LOG_INFO)
-    Debug:AddWhiteEvent("PICKHELPER.CANCEL_PICK", Log.LOG_INFO)
-    Debug:AddWhiteEvent("PICKHELPER.DROP", Log.LOG_INFO)
+    -- Debug:AddWhiteEvent("PICKHELPER.PICK", Log.LOG_INFO)
+    -- Debug:AddWhiteEvent("PICKHELPER.CANCEL_PICK", Log.LOG_INFO)
+    -- Debug:AddWhiteEvent("PICKHELPER.DROP", Log.LOG_INFO)
 
     -- Debug:AddBlackEvent("GAME_STATE.CHANGE")
     Debug:AddBlackEvent("GAME.ROUND_REST_NUM_CHANGED")

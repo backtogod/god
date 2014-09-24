@@ -120,9 +120,9 @@ function Chess:SetTemplateId(template_id)
 	self.template_id = template_id
 	local data = ChessConfig:GetData(template_id)
 	self.max_life = data.base_life
-	self:SetLife(data.base_life)
 	local event_name = self:GetClassName() .. ".SET_TEMPLATE"
 	Event:FireEvent(event_name, self:GetId(), template_id)
+	self:SetLife(data.base_life)
 end
 
 function Chess:GetTemplateId()

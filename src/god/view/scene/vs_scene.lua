@@ -173,17 +173,7 @@ function Scene:InitButtonMenu()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
 	        		end
-	        		ActionMgr:ChangeRestRoundNum(-1)
-	        		ViewInterface:WaitWatchEnd(0.5, 
-	        			function()
-	        				if ActionMgr:GetRestRoundNum() > 0 then
-								Event:FireEvent("GAME.AI_ACTIVE")
-							else
-								ActionMgr:NextRound()
-							end
-	        			end
-	        		)
-	        		CommandCenter:ReceiveCommand({"SpawnChess"})	        		
+	        		CommandCenter:ReceiveCommand({"SpawnChess"})
 	        	end,
 	        },
 	    },
@@ -328,14 +318,7 @@ function Scene:OnTouchMoved(x, y)
 		logic_x = Def.MAP_WIDTH
 	end
 	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
-	if result == 1 then
-		local highlight_green = self:GetObj("main", "draw", "highlight_green")
-		highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
-		highlight_green:setVisible(true)
-
-		local highlight_red = self:GetObj("main", "draw", "highlight_red")
-		highlight_red:setVisible(false)
-	elseif result == 0 then
+	if result == 0 then
 		local highlight_red = self:GetObj("main", "draw", "highlight_red")
 		highlight_red:setPosition(highlight_x, visible_size.height * 0.5)
 		highlight_red:setVisible(true)
@@ -347,13 +330,6 @@ end
 
 function Scene:OnTouchEnded(x, y)
 	local result = TouchInput:OnTouchEnded(x, y)
-	if result == 1 then
-		local highlight_green = self:GetObj("main", "draw", "highlight_green")
-		highlight_green:setVisible(false)
-
-		local highlight_red = self:GetObj("main", "draw", "highlight_red")
-		highlight_red:setVisible(false)
-	end
 end
 
 function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
@@ -420,6 +396,15 @@ function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
 	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
+
+	local map = SelfMap
+	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
+	local highlight_green = self:GetObj("main", "draw", "highlight_green")
+	highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
+	highlight_green:setVisible(true)
+
+	local highlight_red = self:GetObj("main", "draw", "highlight_red")
+	highlight_red:setVisible(false)
 end
 
 function Scene:OnEnemyChessSetDisplayPosition(id, logic_x, logic_y)
@@ -427,6 +412,15 @@ function Scene:OnEnemyChessSetDisplayPosition(id, logic_x, logic_y)
 	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
+
+	local map = EnemyMap
+	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
+	local highlight_green = self:GetObj("main", "draw", "highlight_green")
+	highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
+	highlight_green:setVisible(true)
+
+	local highlight_red = self:GetObj("main", "draw", "highlight_red")
+	highlight_red:setVisible(false)
 end
 
 function Scene:OnChessSetTemplate(id, template_id)
@@ -521,14 +515,18 @@ end
 
 function Scene:OnCancelPickChess(id)
 	local map = GameStateMachine:GetActiveMap()
-
-	local map = GameStateMachine:GetActiveMap()
 	local map_name = map:GetClassName()
 	local chess = self:GetObj("main", map_name, id)
 	local logic_chess = map.obj_pool:GetById(id)
 	self:SetMapChessPosition(map, id, logic_chess.x, logic_chess.y)
 	chess:setOpacity(255)
 	self:RemoveObj("main", map_name, "copy")
+
+	local highlight_green = self:GetObj("main", "draw", "highlight_green")
+	highlight_green:setVisible(false)
+
+	local highlight_red = self:GetObj("main", "draw", "highlight_red")
+	highlight_red:setVisible(false)
 end
 
 function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
@@ -537,6 +535,12 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	assert(chess)
 	chess:setOpacity(255)
 	self:RemoveObj("main", map:GetClassName(), "copy")
+
+	local highlight_green = self:GetObj("main", "draw", "highlight_green")
+	highlight_green:setVisible(false)
+
+	local highlight_red = self:GetObj("main", "draw", "highlight_red")
+	highlight_red:setVisible(false)
 	local x, y = map:Logic2Pixel(logic_x, Def.MAP_HEIGHT)
 	chess:setPosition(x, y)
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)

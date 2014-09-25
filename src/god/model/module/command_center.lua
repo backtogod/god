@@ -96,6 +96,17 @@ function CommandCenter:_TryDropChess(map, id, logic_x)
 end
 
 function CommandCenter:_SpawnChess(map, id_list)
+	ActionMgr:ResetCombo()
+	ActionMgr:ChangeRestRoundNum(-1)
+	ViewInterface:WaitWatchEnd(0.5, 
+		function()
+			if ActionMgr:GetRestRoundNum() > 0 then
+				Event:FireEvent("GAME.AI_ACTIVE")
+			else
+				ActionMgr:NextRound()
+			end
+		end
+	)
 	ChessSpawner:SpawnChess(map, id_list)
 end
 function CommandCenter:_UseSkill(map)

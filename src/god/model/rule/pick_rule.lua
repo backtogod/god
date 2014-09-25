@@ -9,7 +9,7 @@ if not PickRule then
 	PickRule = NewLogicNode("PICK_RULE")
 end
 
-function PickRule:GetCanPick(map, logic_x, logic_y)
+function PickRule:GetCanPick(map, logic_x)
 	local top_id, top_y = map:GetTopCell(logic_x)
 	if top_id and top_id > 0 then
 		local logic_chess = map.obj_pool:GetById(top_id)
@@ -20,7 +20,7 @@ function PickRule:GetCanPick(map, logic_x, logic_y)
 
 end
 
-function PickRule:CanDrop(map, logic_x, logic_y)
+function PickRule:CanDrop(map, logic_x)
 	if map:GetCell(logic_x, Def.MAP_HEIGHT) > 0 then
 		return 0
 	end

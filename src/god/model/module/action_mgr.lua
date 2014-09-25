@@ -67,8 +67,12 @@ function ActionMgr:GetRestRoundNum()
 	return self.rest_round_num
 end
 
-function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
+function ActionMgr:ResetCombo()
 	self.combo_count = 0
+end
+
+function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
+	self:ResetCombo()
 	self:ChangeRestRoundNum(-1)
 	ViewInterface:WaitWatchEnd(
 		0.5,
@@ -88,7 +92,7 @@ function ActionMgr:NextRound()
 	Event:FireEvent("GAME.ACTION_OVER")
 	GameStateMachine:OnActionOver()
 
-	self.combo_count = 0
+	self:ResetCombo()
 	self.rest_round_num = self.raw_round_num
 	self.round_count = self.round_count + 1
 	ViewInterface:WaitWatchEnd( 

@@ -51,7 +51,7 @@ end
 function VSRobot:OnActive(frame)
 	if frame % 2 == 0 then
 		if self.pick_id then
-			if self.drop_x == self.move_x then
+			if self.need_drop == 1 then
 				local pick_id = self.pick_id
 				local drop_x = self.drop_x
 				local pick_x = self.pick_x
@@ -65,6 +65,10 @@ function VSRobot:OnActive(frame)
 				else
 					local ret_code, result = CommandCenter:ReceiveCommand({"TryDropChess", pick_id, drop_x})
 				end
+				self.need_drop = nil
+			elseif self.drop_x == self.move_x then
+				self.need_drop = 1
+				local ret_code, result = CommandCenter:ReceiveCommand({"TryMovePickChess", self.pick_id, self.move_x})
 			elseif self.drop_x > self.move_x then
 				self.move_x = self.move_x + 1
 				local ret_code, result = CommandCenter:ReceiveCommand({"TryMovePickChess", self.pick_id, self.move_x})
@@ -85,6 +89,13 @@ function VSRobot:ThinkAndOperate()
 	end
 	print("............Start Think")
 	local map = GameStateMachine:GetActiveMap()
+
+	local is_spawn = self:DecideSpawn(map)
+	if is_spawn == 1 then
+		print("............Think Result", "spawn")
+		local ret_code = CommandCenter:ReceiveCommand({"SpawnChess"})	
+		return
+	end
 	assert(not self.pick_id)
 
 	local pick_x, drop_x = self:SelectPick(map)
@@ -97,15 +108,15 @@ function VSRobot:ThinkAndOperate()
 	print("............Think Result", pick_id, "Move", pick_x, drop_x)
 end
 
-function VSRobot:FindChessByTemplate(map, template_id, except_x)
+function VSRobot:FindChessByTemplate(map, template_id, top_rank, except_x)
 	local width, height = map:GetSize()
 	for x = 1, width do
 		if not except_x[x] then
-			local top_id, top_y = PickRule:GetCanPick(map, x)
-			if top_id then
-				local top_chess = map.obj_pool:GetById(top_id)
-				if top_chess:GetTemplateId() == template_id then
-					return x, top_id, top_y
+			local chess_id, chess_y = map:GetTopCell(x, top_rank)
+			if chess_id then
+				local chess = map.obj_pool:GetById(chess_id)
+				if chess:TryCall("GetState") == Def.STATE_NORMAL and chess:GetTemplateId() == template_id then
+					return x, chess_id, chess_y
 				end
 			end
 		end
@@ -119,6 +130,28 @@ local strategy_list = {
 	"FindCanMergeArmy",
 	"RandomAction",
 }
+
+function VSRobot:DecideSpawn(map)
+	local list = map:GetCellList()
+	local free_count = 0
+	local total_count = 0
+	for id, _ in pairs(list) do
+		local chess = map.obj_pool:GetById(id)
+		if chess:TryCall("GetState") == Def.STATE_NORMAL then
+			free_count = free_count + 1
+		end
+		total_count = total_count + 1
+	end
+	local width, height = map:GetSize()
+	local max_count = width * height
+	if total_count > 15 then
+		return 0
+	end
+	if free_count > math.floor(max_count * 0.5) then
+		return 0
+	end
+	return 1
+end
 
 function VSRobot:SelectPick(map)
 	local pick_id = nil
@@ -138,17 +171,41 @@ end
 function VSRobot:FindCanCombineArmy(map)
 	local width, height = map:GetSize()
 	for logic_x = 1, width do
-		local top_id, top_y = PickRule:GetCanPick(map, logic_x)
-		if top_id then
-			local next_id = map:GetCell(logic_x, top_y - 1)
-			if next_id and next_id > 0 then
-				local top_chess = map.obj_pool:GetById(top_id)
-				local template_id = top_chess:GetTemplateId()
-				local next_chess = map.obj_pool:GetById(next_id)
-				if next_chess:TryCall("GetState") == Def.STATE_NORMAL and template_id == next_chess:GetTemplateId() then
-					local find_x, find_id = self:FindChessByTemplate(map, template_id, {[logic_x] = 1})
-					if find_x and find_id then
-						return find_x, logic_x
+		if PickRule:CanDrop(map, logic_x) == 1 then
+			local top_id, top_y = PickRule:GetCanPick(map, logic_x)
+			if top_id then
+				local next_id = map:GetCell(logic_x, top_y - 1)
+				if next_id and next_id > 0 then
+					local top_chess = map.obj_pool:GetById(top_id)
+					local template_id = top_chess:GetTemplateId()
+					local next_chess = map.obj_pool:GetById(next_id)
+					if next_chess:TryCall("GetState") == Def.STATE_NORMAL and template_id == next_chess:GetTemplateId() then
+						local find_x, find_id = self:FindChessByTemplate(map, template_id, 1, {[logic_x] = 1})
+						if find_x and find_id then
+							return find_x, logic_x
+						end
+
+						local potential_x, potential_id = self:FindChessByTemplate(map, template_id, 2, {[logic_x] = 1})
+						if potential_x and potential_id then
+							print(potential_x, potential_id)
+							local pick_x = potential_x
+							local drop_x = nil
+
+							local random_drop_list = {}
+							for i = 1, width do
+								if i ~= logic_x and i ~= potential_x and i ~= pick_x and PickRule:CanDrop(map, i) == 1 then
+									table.insert(random_drop_list, i)
+								end
+							end
+							local random_drop_max = #random_drop_list
+							if random_drop_max > 0 then
+								drop_x = random_drop_list[math.random(1, random_drop_max)]
+							end
+
+							if pick_x and drop_x then
+								return pick_x, drop_x
+							end
+						end
 					end
 				end
 			end
@@ -159,13 +216,15 @@ end
 function VSRobot:FindCanNextToArmy(map)
 	local width, height = map:GetSize()
 	for logic_x = 1, width do
-		local top_id, top_y = PickRule:GetCanPick(map, logic_x)
-		if top_id then
-			local top_chess = map.obj_pool:GetById(top_id)
-			local template_id = top_chess:GetTemplateId()		
-			local find_x, find_id = self:FindChessByTemplate(map, template_id, {[logic_x] = 1})
-			if find_x and find_id then
-				return find_x, logic_x
+		if PickRule:CanDrop(map, logic_x) == 1 then
+			local top_id, top_y = PickRule:GetCanPick(map, logic_x)
+			if top_id then
+				local top_chess = map.obj_pool:GetById(top_id)
+				local template_id = top_chess:GetTemplateId()		
+				local find_x, find_id = self:FindChessByTemplate(map, template_id, 1, {[logic_x] = 1})
+				if find_x and find_id then
+					return find_x, logic_x
+				end
 			end
 		end
 	end
@@ -201,14 +260,14 @@ function VSRobot:FindCanCombieWall(map)
 				if next_x == cur_x + 1 then
 					local left_top_id, left_top_y = map:GetTopCell(cur_x - 1)
 					if left_top_y and left_top_y == (y - 1) then
-						local find_x, find_id = self:FindChessByTemplate(map, cur_id, {[cur_x - 1] = 1, [cur_x] = 1, [next_x] = 1})
+						local find_x, find_id = self:FindChessByTemplate(map, cur_id, 1, {[cur_x - 1] = 1, [cur_x] = 1, [next_x] = 1})
 						if find_x and find_id then
 							return find_x, cur_x - 1
 						end
 					end
 					local right_top_id, rigth_top_y = map:GetTopCell(next_x + 1)
 					if rigth_top_y and rigth_top_y == (y - 1) then
-						local find_x, find_id = self:FindChessByTemplate(map, cur_id, {[next_x + 1] = 1, [cur_x] = 1, [next_x] = 1})
+						local find_x, find_id = self:FindChessByTemplate(map, cur_id, 1, {[next_x + 1] = 1, [cur_x] = 1, [next_x] = 1})
 						if find_x and find_id then
 							return find_x, next_x + 1
 						end
@@ -216,7 +275,7 @@ function VSRobot:FindCanCombieWall(map)
 				elseif next_x == cur_x + 2 then
 					local center_top_id, center_top_y = map:GetTopCell(cur_x + 1)
 					if center_top_y and center_top_y == (y - 1) then
-						local find_x, find_id = self:FindChessByTemplate(map, cur_id, {[cur_x + 1] = 1, [cur_x] = 1, [next_x] = 1})
+						local find_x, find_id = self:FindChessByTemplate(map, cur_id, 1, {[cur_x + 1] = 1, [cur_x] = 1, [next_x] = 1})
 						if find_x and find_id then
 							return find_x, cur_x - 1
 						end
@@ -237,14 +296,16 @@ end
 function VSRobot:FindCanMergeArmy(map)
 	local width, height = map:GetSize()
 	for logic_x = 1, width do
-		local top_id, top_y = map:GetTopCell(logic_x)
-		if top_id then
-			local top_chess = map.obj_pool:GetById(top_id)
-			if top_chess:TryCall("GetState") == Def.STATE_ARMY then
-				local template_id = top_chess:GetTemplateId()		
-				local find_x, find_id = self:FindChessByTemplate(map, template_id, {[logic_x] = 1})
-				if find_x and find_id then
-					return find_x, logic_x
+		if PickRule:CanDrop(map, logic_x) == 1 then
+			local top_id, top_y = map:GetTopCell(logic_x)
+			if top_id then
+				local top_chess = map.obj_pool:GetById(top_id)
+				if top_chess:TryCall("GetState") == Def.STATE_ARMY then
+					local template_id = top_chess:GetTemplateId()		
+					local find_x, find_id = self:FindChessByTemplate(map, template_id, 1, {[logic_x] = 1})
+					if find_x and find_id then
+						return find_x, logic_x
+					end
 				end
 			end
 		end
@@ -259,7 +320,7 @@ function VSRobot:RandomAction(map)
 		if chess_id then
 			can_pick_list[#can_pick_list + 1] = logic_x
 		end
-		if PickRule:CanDrop(map, logic_x, logic_y) == 1 then
+		if PickRule:CanDrop(map, logic_x) == 1 then
 			can_move_list[#can_move_list + 1] = logic_x
 		end
 	end

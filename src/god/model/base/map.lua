@@ -82,6 +82,10 @@ function Map:GetCell(x, y)
 	return self.cell_pool[x][y]
 end
 
+function Map:GetCellList()
+	return self.cell_list
+end
+
 function Map:GetCellInfo(id)
 	return self.cell_list[id]
 end
@@ -155,21 +159,26 @@ function Map:GetValidHeight(x)
 	return self.height_list[x]
 end
 
-function Map:GetTopCell(x)
+function Map:GetTopCell(x, top_rank)
+	if not top_rank then
+		top_rank = 1
+	end
 	if not self.cell_pool[x] then
 		return
 	end
 	local ret_id = nil
 	local ret_y = 0
-	for i = 1, self.height do
+	for i = self.height, 1, -1 do
 		local value = self:GetCell(x, i)
-		if value <= 0 then
-			break
+		if value > 0 then
+			top_rank = top_rank - 1
+			if top_rank <= 0 then
+				ret_id = value
+				ret_y = i
+				break
+			end
 		end
-		ret_id = value
-		ret_y = i
 	end
-
 	return ret_id, ret_y
 end
 
@@ -248,9 +257,9 @@ function EnemyMap:_Init()
 	self.obj_pool = EnemyChessPool
 
 	local spec_list = {
-		{2,1,2,3,4,5},
-		{1,2,3,6,1,6},
-		{4,3,3,4,4,5},
+		{1,2,3,4,5,6,},
+		{6,5,3,4,2,1,},
+		{4,6,4,3,1,4},
 	}
 	self:InitChess(3, spec_list)
 

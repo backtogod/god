@@ -155,6 +155,24 @@ function Map:GetValidHeight(x)
 	return self.height_list[x]
 end
 
+function Map:GetTopCell(x)
+	if not self.cell_pool[x] then
+		return
+	end
+	local ret_id = nil
+	local ret_y = 0
+	for i = 1, self.height do
+		local value = self:GetCell(x, i)
+		if value <= 0 then
+			break
+		end
+		ret_id = value
+		ret_y = i
+	end
+
+	return ret_id, ret_y
+end
+
 if not SelfMap then
 	SelfMap = Class:New(Map, "SELF_MAP")
 end
@@ -173,7 +191,7 @@ function SelfMap:_Init()
 
 	local spec_list = {
 		{2,2,1,4,4,},
-		{1,2,2,6,6,4},
+		{1,3,2,6,6,4},
 		{3,2,3,3,2,6},
 	}
 	self:InitChess(3, spec_list)
@@ -231,8 +249,8 @@ function EnemyMap:_Init()
 
 	local spec_list = {
 		{2,1,2,3,4,5},
-		{1,2,3,2,2,5},
-		{1,3,3,4,2,5},
+		{1,2,3,6,1,6},
+		{4,3,3,4,4,5},
 	}
 	self:InitChess(3, spec_list)
 

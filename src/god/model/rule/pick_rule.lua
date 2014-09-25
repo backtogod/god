@@ -10,15 +10,14 @@ if not PickRule then
 end
 
 function PickRule:GetCanPick(map, logic_x, logic_y)
-	for pick_y = Def.MAP_HEIGHT, 1, -1 do
-		local chess_id = map:GetCell(logic_x, pick_y)
-		if chess_id and chess_id > 0 then
-			local logic_chess = map.obj_pool:GetById(chess_id)
-			if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
-				return chess_id, pick_y
-			end
+	local top_id, top_y = map:GetTopCell(logic_x)
+	if top_id and top_id > 0 then
+		local logic_chess = map.obj_pool:GetById(top_id)
+		if logic_chess:TryCall("GetState") == Def.STATE_NORMAL then
+			return top_id, top_y
 		end
 	end
+
 end
 
 function PickRule:CanDrop(map, logic_x, logic_y)

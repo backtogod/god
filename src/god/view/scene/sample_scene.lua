@@ -35,7 +35,7 @@ function Scene:MainSample()
 	
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
-    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 30}
+    	{font_size = 60, align_type = "center", interval_x = 50, interval_y = 60}
     )
     if height > visible_size.height then
     	self:SetHeight(height)
@@ -55,7 +55,7 @@ function Scene:TestCase()
 	for stage_name, data in pairs(VSStageConfig.test_stage_data) do
 		local element = {
 			{
-				item_name = data.case_name or stage_name .. "(forget?)",
+				item_name = data.case_name or stage_name .. "(?)",
 				callback_function = function ()
 					SceneMgr:LoadScene("VSScene", stage_name)
 				end,

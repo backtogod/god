@@ -194,32 +194,11 @@ function SelfMap:_Uninit()
 	return 1
 end
 
-function SelfMap:_Init()
+function SelfMap:_Init(width, height, spec_list, wave_count)
 	ChessPool:Init("CHESS")
 	self.obj_pool = ChessPool
 
-	local spec_list = {
-		{2,2,1,4,4,2},
-		{1,3,2,6,6,4},
-		{3,2,3,3,2,6},
-	}
-	self:InitChess(3, spec_list)
-
-	-- local function wave_1()
-	-- 	ChessSpawner:SpawnChess(self, {2,2,1,4,4,})
-	-- end
-
-	-- local function wave_2()
-	-- 	ChessSpawner:SpawnChess(self, {1,1,2,6,6,4})
-	-- end
-
-	-- local function wave_3()
-	-- 	ChessSpawner:SpawnChess(self, {3,2,3,3,2,6})
-	-- end
-
-	-- wave_1()
-	-- self:RegistLogicTimer(5, {wave_2})
-	-- self:RegistLogicTimer(10, {wave_3})
+	self:InitChess(wave_count, spec_list)
 
 	return 1
 end
@@ -252,16 +231,11 @@ function EnemyMap:_Uninit()
 	return 1
 end
 
-function EnemyMap:_Init()
+function EnemyMap:_Init(width, height, spec_list, wave_count)
 	EnemyChessPool:Init("ENEMY_CHESS")
 	self.obj_pool = EnemyChessPool
 
-	local spec_list = {
-		{1,2,3,4,5,6,},
-		{6,5,3,4,2,1,},
-		{4,6,4,3,1,4},
-	}
-	self:InitChess(3, spec_list)
+	self:InitChess(wave_count, spec_list)
 
 	return 1
 end

@@ -187,7 +187,6 @@ function VSRobot:FindCanCombineArmy(map)
 
 						local potential_x, potential_id = self:FindChessByTemplate(map, template_id, 2, {[logic_x] = 1})
 						if potential_x and potential_id then
-							print(potential_x, potential_id)
 							local pick_x = potential_x
 							local drop_x = nil
 

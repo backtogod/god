@@ -15,19 +15,19 @@ Scene.property = {
 
 function Scene:MainSample()
 	local element_list = {
- 		{
+		{
 	    	{
-				item_name = "VS Scene",
+				item_name = "Quick Play",
 	        	callback_function = function()
-	        		SceneMgr:LoadScene("VSScene", "VSScene")
+	        		SceneMgr:LoadScene("VSScene", "quick_play")
 	        	end,
 	        },
 	    },
-	    {
-	        {
-				item_name = "Boss Scene",
+ 		{
+	    	{
+				item_name = "Test Cases",
 	        	callback_function = function()
-	        		SceneMgr:LoadScene("VSScene", "VSScene")
+	        		self:TestCase()
 	        	end,
 	        },
 	    },
@@ -35,7 +35,7 @@ function Scene:MainSample()
 	
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
-    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 20}
+    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 30}
     )
     if height > visible_size.height then
     	self:SetHeight(height)
@@ -50,26 +50,27 @@ function Scene:MainSample()
     return 1
 end
 
-function Scene:SceneSample()
-	local element_list = {
- 		{
-	    	{
-				item_name = "GameScene",
-	        	callback_function = function()
-	        		SceneMgr:LoadScene("GameScene", "GameScene")
-	        	end,
-	        },
-	    },
-	    {
-	    	{
-				item_name =  "Return",
-	        	callback_function = function()
-	        		self:MainSample()
-	        	end,
-	        },
-	    },
-	}
-	
+function Scene:TestCase()
+	local element_list = {}
+	for stage_name, data in pairs(VSStageConfig.test_stage_data) do
+		local element = {
+			{
+				item_name = data.case_name or stage_name .. "(forget?)",
+				callback_function = function ()
+					SceneMgr:LoadScene("VSScene", stage_name)
+				end,
+			},
+		}
+		element_list[#element_list + 1] = element
+	end
+	element_list[#element_list + 1] = {
+    	{
+			item_name =  "Return",
+        	callback_function = function()
+        		self:MainSample()
+        	end,
+        },
+    }
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
     	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 20}

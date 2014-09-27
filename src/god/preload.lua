@@ -30,6 +30,7 @@ AddProjectScript("view/scene/boss_scene.lua")
 
 --Load Game Config
 AddProjectScript("config/chess_config.lua")
+AddProjectScript("config/vs_stage_config.lua")
 
 --$(SRCROOT)/../../../../external/lua/luajit/prebuilt/ios
 

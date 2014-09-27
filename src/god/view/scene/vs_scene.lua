@@ -72,14 +72,18 @@ function Scene:_Init()
 	self.master_wait_helper = nil
 	self.slave_wait_helper_list = {}
 
+	local stage_config = VSStageConfig:GetConfig(self:GetName())
+	if not stage_config then
+		return
+	end
 	assert(self:InitUI() == 1)
 	assert(Mover:Init() == 1)
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
-	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
+	assert(GameStateMachine:Init(stage_config.init_state) == 1)
 	assert(Player:Init(100, 100) == 1)
-	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
-	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
+	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.self_spec, stage_config.self_wave_count) == 1)
+	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.enemy_spec, stage_config.enemy_wave_count) == 1)
 	assert(PickHelper:Init(1) == 1)
 	assert(VSRobot:Init() == 1)
 

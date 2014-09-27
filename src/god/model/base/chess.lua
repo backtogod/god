@@ -30,7 +30,7 @@ function Chess:_Init(id, template_id, x, y)
 	local data = ChessConfig:GetData(template_id)
 	self.life = data.base_life
 	self.step_life = data.base_life * 3
-	self.max_life =self.step_life * (data.wait_round + 1)
+	self.max_life = self.step_life * (data.wait_round + 1)
 	self:AddComponent("action", "ACTION")
 	self.wait_round = -1
 	return 1

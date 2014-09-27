@@ -12,13 +12,13 @@ Scene.property = {
 	-- can_drag = 1,
 }
 
-Scene:DeclareListenEvent("CHESS.ADD", "OnChessAdd")
-Scene:DeclareListenEvent("CHESS.REMOVE", "OnChessRemove")
-Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnChessSetPosition")
-Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnChessSetDisplayPosition")
-Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnChessSetTemplate")
-Scene:DeclareListenEvent("CHESS.WAIT_ROUND_CHANGED", "OnChessWaitRoundChanged")
-Scene:DeclareListenEvent("CHESS.LIFE_CHANGED", "OnChessLifeChanged")
+Scene:DeclareListenEvent("CHESS.ADD", "OnSelfChessAdd")
+Scene:DeclareListenEvent("CHESS.REMOVE", "OnSelfChessRemove")
+Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnSelfChessSetPosition")
+Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnSelfChessSetDisplayPosition")
+Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnSelfChessSetTemplate")
+Scene:DeclareListenEvent("CHESS.WAIT_ROUND_CHANGED", "OnSelfChessWaitRoundChanged")
+Scene:DeclareListenEvent("CHESS.LIFE_CHANGED", "OnSelfChessLifeChanged")
 
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
@@ -332,88 +332,123 @@ function Scene:OnTouchEnded(x, y)
 	local result = TouchInput:OnTouchEnded(x, y)
 end
 
-function Scene:OnChessAdd(id, template_id, logic_x, logic_y)
-	local config = ChessConfig:GetData(template_id)
-	if not config then
+function Scene:OnSelfChessAdd(id, template_id, logic_x, logic_y)
+	local chess = ChessPool:GetById(id)
+	if not chess then
 		assert(false)
 		return
 	end
-	local chess_sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", SelfMap:GetClassName(), id, chess_sprite)
-	self:SetMapChessPosition(SelfMap, id, logic_x, Def.MAP_HEIGHT)
-	local chess = ChessPool:GetById(id)
-	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
-	return self:MoveChessToPosition(chess, x, y, Def.CHESS_MOVE_SPEED)
+	return self:OnChessAdd(chess, template_id, logic_x, logic_y)
 end
 
 function Scene:OnEnemyChessAdd(id, template_id, logic_x, logic_y)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessAdd(chess, template_id, logic_x, logic_y)
+end
+
+function Scene:OnChessAdd(chess, template_id, logic_x, logic_y)
 	local config = ChessConfig:GetData(template_id)
 	if not config then
 		assert(false)
 		return
 	end
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = NewPuppet(chess:GetClassName())
+	self:AddObj("puppet", map:GetClassName(), id, puppet)
 	local chess_sprite = self:GenerateChessSprite(config.image)
-	self:AddObj("main", EnemyMap:GetClassName(), id, chess_sprite)
-	self:SetMapChessPosition(EnemyMap, id, logic_x, Def.MAP_HEIGHT)
+	puppet:AddChildElement("body", chess_sprite, 0, 0, 1, 10)
 
-	local chess = EnemyChessPool:GetById(id)
-	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
+	self:AddObj("main", map:GetClassName(), id, puppet:GetSprite())
+	self:SetMapChessPosition(map, id, logic_x, Def.MAP_HEIGHT)
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	return self:MoveChessToPosition(chess, x, y, Def.CHESS_MOVE_SPEED)
 end
 
-function Scene:OnChessRemove(id)
-	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	self:RemoveObj("main", SelfMap:GetClassName(), id)
-	if self:GetObj(SelfMap:GetClassName(), "hp", id) then
-		self:RemoveObj(SelfMap:GetClassName(), "hp", id)
+function Scene:OnSelfChessRemove(id)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
 	end
+	return self:OnChessRemove(chess)
 end
 
 function Scene:OnEnemyChessRemove(id)
-	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
-	self:RemoveObj("main", EnemyMap:GetClassName(), id)
-	if self:GetObj(EnemyMap:GetClassName(), "hp", id) then
-		self:RemoveObj(EnemyMap:GetClassName(), "hp", id)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
 	end
+	return self:OnChessRemove(chess)
 end
 
-function Scene:OnChessSetPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
-	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
-	chess:setPosition(x, y)
-	chess:setLocalZOrder(visible_size.height - y)
+function Scene:OnChessRemove(chess)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+	puppet:Uninit()
+	self:RemoveObj("puppet", map:GetClassName(), id)
+	self:RemoveObj("main", map:GetClassName(), id)
+end
+
+function Scene:OnSelfChessSetPosition(id, logic_x, logic_y)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessSetPosition(chess, logic_x, logic_y)
 end
 
 function Scene:OnEnemyChessSetPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", EnemyMap:GetClassName(), id)
-	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
-	chess:setPosition(x, y)
-	chess:setLocalZOrder(visible_size.height - y)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessSetPosition(chess, logic_x, logic_y)
 end
 
-function Scene:OnChessSetDisplayPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", SelfMap:GetClassName(), id)
-	local x, y = SelfMap:Logic2Pixel(logic_x, logic_y)
-	chess:setPosition(x, y)
-	chess:setLocalZOrder(visible_size.height - y)
+function Scene:OnChessSetPosition(chess, logic_x, logic_y)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
+	chess_sprite:setPosition(x, y)
+	chess_sprite:setLocalZOrder(visible_size.height - y)
+end
 
-	local map = SelfMap
-	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
-	local highlight_green = self:GetObj("main", "draw", "highlight_green")
-	highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
-	highlight_green:setVisible(true)
-
-	local highlight_red = self:GetObj("main", "draw", "highlight_red")
-	highlight_red:setVisible(false)
+function Scene:OnSelfChessSetDisplayPosition(id, logic_x, logic_y)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessSetDisplayPosition(chess, logic_x, logic_y)
 end
 
 function Scene:OnEnemyChessSetDisplayPosition(id, logic_x, logic_y)
-	local chess = self:GetObj("main", EnemyMap:GetClassName(), id)
-	local x, y = EnemyMap:Logic2Pixel(logic_x, logic_y)
-	chess:setPosition(x, y)
-	chess:setLocalZOrder(visible_size.height - y)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessSetDisplayPosition(chess, logic_x, logic_y)
+end
 
-	local map = EnemyMap
+function Scene:OnChessSetDisplayPosition(chess, logic_x, logic_y)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
+	local x, y = map:Logic2Pixel(logic_x, logic_y)
+	chess_sprite:setPosition(x, y)
+	chess_sprite:setLocalZOrder(visible_size.height - y)
+
 	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
 	local highlight_green = self:GetObj("main", "draw", "highlight_green")
 	highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
@@ -423,80 +458,300 @@ function Scene:OnEnemyChessSetDisplayPosition(id, logic_x, logic_y)
 	highlight_red:setVisible(false)
 end
 
-function Scene:OnChessSetTemplate(id, template_id)
-	local config = ChessConfig:GetData(template_id)
-	if not config then
+function Scene:OnSelfChessSetTemplate(id, template_id)
+	local chess = ChessPool:GetById(id)
+	if not chess then
 		assert(false)
 		return
 	end
-	local old_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	local x, y = old_sprite:getPosition()
-	self:RemoveObj("main", SelfMap:GetClassName(), id)
-
-	local sprite = self:GenerateChessSprite(config.image)
-	sprite:setPosition(x, y)
-	sprite:setLocalZOrder(visible_size.height - y)
-	self:AddObj("main", SelfMap:GetClassName(), id, sprite)
+	return self:OnChessSetTemplate(chess, template_id)
 end
 
 function Scene:OnEnemyChessSetTemplate(id, template_id)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessSetTemplate(chess, template_id)
+end
+
+function Scene:OnChessSetTemplate(chess, template_id)
 	local config = ChessConfig:GetData(template_id)
 	if not config then
 		assert(false)
 		return
 	end
-	local old_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
-	local x, y = old_sprite:getPosition()
-	self:RemoveObj("main", EnemyMap:GetClassName(), id)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+	puppet:RemoveChildElement("body")
 
 	local sprite = self:GenerateChessSprite(config.image)
-	sprite:setPosition(x, y)
-	sprite:setLocalZOrder(visible_size.height - y)
-	self:AddObj("main", EnemyMap:GetClassName(), id, sprite)
+	puppet:AddChildElement("body", sprite, 0, 0, 1, 10)
 end
 
-function Scene:OnChessWaitRoundChanged(id, round)
-	local chess_sprite = self:GetObj("main", SelfMap:GetClassName(), id)
-	local label = self:GetObj("chess", "wait_round", id)
-	if round > 0 then
-		if not label then
-			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
-			local rect = chess_sprite:getBoundingBox()
-			local scale = chess_sprite:getScale()
-			label:setPosition(rect.width * 0.5 / scale, rect.height * 0.5 / scale)
-			self:AddObj("chess", "wait_round", id, label)
-			chess_sprite:addChild(label)
-		end
-		label:setString(tostring(round))
-	else
-		if label then
-			chess_sprite:removeChild(label, true)
-			self:RemoveObj("chess", "wait_round", id)
-		end
+function Scene:OnSelfChessWaitRoundChanged(id, round)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
 	end
+	return self:OnChessWaitRoundChanged(chess, round)
 end
 
 function Scene:OnEnemyChessWaitRoundChanged(id, round)
-	local chess_sprite = self:GetObj("main", EnemyMap:GetClassName(), id)
-	local label = self:GetObj("enemy_chess", "wait_round", id)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessWaitRoundChanged(chess, round)
+end
+
+function Scene:OnChessWaitRoundChanged(chess, round)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+	local chess_sprite = puppet:GetChildElement("body")
+
+	local label = puppet:GetChildElement("wait_round")
 	if round > 0 then
 		if not label then
 			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
-			label:setAnchorPoint(cc.p(0.5, 0.5))
 			local rect = chess_sprite:getBoundingBox()
 			local scale = chess_sprite:getScale()
-			label:setPosition(rect.width * 0.5 / scale, rect.height * 0.5 / scale)
-			self:AddObj("enemy_chess", "wait_round", id, label)
-			chess_sprite:addChild(label)
+			
+			puppet:AddChildElement("wait_round", label, 0, Def.MAP_CELL_HEIGHT * 0.5, 0, 11)
 		end
 		label:setString(tostring(round))
 	else
 		if label then
-			chess_sprite:removeChild(label, true)
-			self:RemoveObj("enemy_chess", "wait_round", id)
+			puppet:RemoveElement("wait_round")
 		end
 	end
 end
+
+function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
+	local chess_id = chess:GetId()
+	local map = chess:GetMap()
+
+	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+			function()
+				CombineMgr:CheckCombine(SelfMap)
+				CombineMgr:CheckCombine(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
+	end
+	chess_sprite:setLocalZOrder(visible_size.height - y)
+	local function func_time_over(id)
+		call_back()
+	end
+	local start_x, start_y = chess_sprite:getPosition()
+	local time = math.abs(y - start_y) / speed
+	if time <= 0 then
+		time = 0.1
+	end
+	local job_id = slave_waite_helper:WaitJob(time + 1, func_time_over)
+	local battle_waiter_helper = self:GetSlaveWatchWaiter("battle")
+	local battle_job_id = nil
+	if battle_waiter_helper then
+		battle_job_id = battle_waiter_helper:WaitJob(time + 2)
+	end
+	local move_action = cc.MoveTo:create(time, cc.p(x, y))
+	local callback_action = cc.CallFunc:create(
+		function()
+			if call_back and type(call_back) == "function" then
+				call_back()
+			end
+			slave_waite_helper:JobComplete(job_id)
+			if battle_waiter_helper and battle_job_id then
+				battle_waiter_helper:JobComplete(battle_job_id)
+			end
+		end
+	)
+	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
+end
+
+function Scene:ChangeChessState(chess, state, call_back)
+	local id = chess:GetId()
+	local map = chess:GetMap()
+
+	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
+
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("transform")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("transform", 0.1, 100, 
+			function()
+				Mover:MoveWallArmy(SelfMap)
+				Mover:MoveWallArmy(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
+	end
+
+	local job_id = slave_waite_helper:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
+
+	local blink_action = cc.Blink:create(Def.TRANSFORM_TIME, 5)
+	local callback_action = cc.CallFunc:create(
+		function()
+			if call_back and type(call_back) == "function" then
+				call_back()
+			end
+			slave_waite_helper:JobComplete(job_id)
+		end
+	)
+	local delay_action = cc.DelayTime:create(0.2)
+	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
+end
+
+function Scene:ChessAttack(chess, target_chess, call_back)
+	local chess_id = chess:GetId()
+	local map = chess:GetMap()
+
+	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
+	assert(self.master_wait_helper)
+	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
+	if not slave_waite_helper then
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+			function()
+				CombineMgr:CheckCombine(SelfMap)
+				CombineMgr:CheckCombine(EnemyMap)
+			end
+		)
+		-- slave_waite_helper:EnableDebug()
+	end
+	local job_id = slave_waite_helper:WaitJob(10, func_time_over)
+	local function func_time_over(id)
+		call_back()
+	end
+	local battle_waiter_helper = self:GetSlaveWatchWaiter("battle")
+	local battle_job_id = nil
+	if battle_waiter_helper then
+		battle_job_id = battle_waiter_helper:WaitJob(11)
+	end
+	local callback_action = cc.CallFunc:create(
+		function()
+			if call_back and type(call_back) == "function" then
+				call_back(
+)			end
+			slave_waite_helper:JobComplete(job_id)
+			if battle_waiter_helper and battle_job_id then
+				battle_waiter_helper:JobComplete(battle_job_id)
+			end
+		end
+	)
+	local delay_action = cc.DelayTime:create(0.5)
+	chess_sprite:runAction(cc.Sequence:create(delay_action, callback_action))
+end
+
+function Scene:OnSelfChessLifeChanged(id, new_life, old_life)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeChanged(chess, new_life, old_life)
+end
+
+function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeChanged(chess, new_life, old_life)
+end
+
+function Scene:OnChessLifeChanged(chess, new_life, old_life)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+
+	local sprite = puppet:GetChildElement("body")
+	self:_OnLifeChanged(puppet:GetSprite(), new_life - old_life, 0, 0)
+
+	if chess:TryCall("GetState") == Def.STATE_NORMAL then
+		return
+	end
+
+	local progress_hp = puppet:GetChildElement("hp")
+	if not progress_hp then
+		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
+		local rect = sprite:getBoundingBox()
+		local scale = sprite:getScale()
+
+		local progress_hp_rect = progress_hp:getBoundingBox()
+		progress_hp:setScaleX((rect.width - 4) / progress_hp_rect.width)
+
+		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
+		local progress_bg_rect = progress_bg:getBoundingBox()
+		progress_bg:setScaleX(rect.width / progress_hp_rect.width)
+
+		local x, y = 0, (rect.height + progress_bg_rect.height * 0.5)
+		puppet:AddChildElement("hp", progress_hp, x, y, 0, 12)
+		puppet:AddChildElement("hp_bg", progress_bg, x, y, 0, 11)
+	end
+
+	local life = chess:GetLife()
+	local max_life = chess:GetMaxLife()
+	progress_hp:setPercentage((life / max_life) * 100)
+end
+
+function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)
+	local layer_main = self:GetLayer("main")
+	local text = tostring(change_value)
+	local param = {
+		color     = "red",
+		percent_x = percent_x or 0,
+		percent_y = percent_y or 0.5,
+		offset_y = Def.MAP_CELL_HEIGHT * 0.5,
+		up_time   = 1,
+		up_y      = 40,
+		fade_time = 0.5,
+		zorder	  = 1000,
+		-- fade_up_y = 10,
+		text_scale = text_scale or 1.2,
+	}
+	if change_value > 0 then
+		param.color = "green"
+		text = "+"..text
+	end
+	FlyText:VerticalShake(layer_main, sprite, "fonts/img_font.fnt", text, param)
+end
+
+function Scene:OnSetSelfPlayerHP(new_life, old_life)
+	local change_value = new_life - old_life
+	local ui_frame = self:GetUI()
+	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "self")
+	local max_life = Player:GetMaxSelfHP()
+	local percentage = (new_life / max_life) * 100
+	progress_bar:setPercentage(percentage)
+	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
+
+	local label = Ui:GetElement(ui_frame, "LABEL", "self_hp")
+	label:setString(string.format("%3d / %3d", new_life, max_life))
+end
+
+function Scene:OnSetEnemyPlayerHP(new_life, old_life)
+	local change_value = new_life - old_life
+	local ui_frame = self:GetUI()
+	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "enemy")
+	local max_life = Player:GetMaxEnemyHP()
+	local percentage = (new_life / max_life) * 100
+	progress_bar:setPercentage(percentage)
+	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
+
+	local label = Ui:GetElement(ui_frame, "LABEL", "enemy_hp")
+	label:setString(string.format("%3d / %3d", new_life, max_life))
+end
+
 
 function Scene:OnPickChess(id, logic_x, logic_y)
 	local map = GameStateMachine:GetActiveMap()
@@ -571,8 +826,6 @@ function Scene:NewSlaveWatchWaiter(waiter_name, min_wait_time, max_wait_time, ca
 	assert(master_waiter)
 	assert(not self.slave_wait_helper_list[waiter_name])
 
-	print("new", waiter_name, min_wait_time, max_wait_time, call_back)
-
 	local job_id = master_waiter:WaitJob(max_wait_time)
 	local slave_waite_helper = Class:New(WaitHelper, waiter_name)
 	
@@ -591,7 +844,6 @@ end
 function Scene:OnSlaveWaiterComplete(waiter_name, job_id, call_back)
 	local master_waiter = self:GetMasterWatchWaiter()
 	assert(master_waiter)
-	print("complete", waiter_name, min_wait_time, max_wait_time, call_back)
 	self.slave_wait_helper_list[waiter_name]:Uninit()
 	self.slave_wait_helper_list[waiter_name] = nil
 	if call_back then
@@ -599,136 +851,6 @@ function Scene:OnSlaveWaiterComplete(waiter_name, job_id, call_back)
 		call_back()
 	end
 	master_waiter:JobComplete(job_id)
-end
-
-function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
-	local chess_id = chess:GetId()
-	local map = SelfMap
-	if chess:GetClassName() == "ENEMY_CHESS" then
-		map = EnemyMap
-	else
-		map = SelfMap
-	end
-	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
-	assert(self.master_wait_helper)
-	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
-	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
-			function()
-				CombineMgr:CheckCombine(SelfMap)
-				CombineMgr:CheckCombine(EnemyMap)
-			end
-		)
-		-- slave_waite_helper:EnableDebug()
-	end
-	chess_sprite:setLocalZOrder(visible_size.height - y)
-	local function func_time_over(id)
-		call_back()
-	end
-	local start_x, start_y = chess_sprite:getPosition()
-	local time = math.abs(y - start_y) / speed
-	if time <= 0 then
-		time = 0.1
-	end
-	local job_id = slave_waite_helper:WaitJob(time + 1, func_time_over)
-	local battle_waiter_helper = self:GetSlaveWatchWaiter("battle")
-	local battle_job_id = nil
-	if battle_waiter_helper then
-		battle_job_id = battle_waiter_helper:WaitJob(time + 2)
-	end
-	local move_action = cc.MoveTo:create(time, cc.p(x, y))
-	local callback_action = cc.CallFunc:create(
-		function()
-			if call_back and type(call_back) == "function" then
-				call_back()
-			end
-			slave_waite_helper:JobComplete(job_id)
-			if battle_waiter_helper and battle_job_id then
-				battle_waiter_helper:JobComplete(battle_job_id)
-			end
-		end
-	)
-	chess_sprite:runAction(cc.Sequence:create(move_action, callback_action))
-end
-
-function Scene:ChangeChessState(chess, state, call_back)
-	local id = chess:GetId()
-	local map = SelfMap
-	if chess:GetClassName() == "ENEMY_CHESS" then
-		map = EnemyMap
-	end
-
-	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
-
-	assert(self.master_wait_helper)
-	local slave_waite_helper = self:GetSlaveWatchWaiter("transform")
-	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("transform", 0.1, 100, 
-			function()
-				Mover:MoveWallArmy(SelfMap)
-				Mover:MoveWallArmy(EnemyMap)
-			end
-		)
-		-- slave_waite_helper:EnableDebug()
-	end
-
-	local job_id = slave_waite_helper:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
-
-	local blink_action = cc.Blink:create(Def.TRANSFORM_TIME, 5)
-	local callback_action = cc.CallFunc:create(
-		function()
-			if call_back and type(call_back) == "function" then
-				call_back()
-			end
-			slave_waite_helper:JobComplete(job_id)
-		end
-	)
-	local delay_action = cc.DelayTime:create(0.2)
-	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
-end
-
-function Scene:ChessAttack(chess, target_chess, call_back)
-	local chess_id = chess:GetId()
-	local map = SelfMap
-	if chess:GetClassName() == "ENEMY_CHESS" then
-		map = EnemyMap
-	else
-		map = SelfMap
-	end
-	local chess_sprite = self:GetObj("main", map:GetClassName(), chess_id)
-	assert(self.master_wait_helper)
-	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
-	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
-			function()
-				CombineMgr:CheckCombine(SelfMap)
-				CombineMgr:CheckCombine(EnemyMap)
-			end
-		)
-		-- slave_waite_helper:EnableDebug()
-	end
-	local job_id = slave_waite_helper:WaitJob(10, func_time_over)
-	local function func_time_over(id)
-		call_back()
-	end
-	local battle_waiter_helper = self:GetSlaveWatchWaiter("battle")
-	local battle_job_id = nil
-	if battle_waiter_helper then
-		battle_job_id = battle_waiter_helper:WaitJob(11)
-	end
-	local callback_action = cc.CallFunc:create(
-		function()
-			if call_back and type(call_back) == "function" then
-				call_back(
-)			end
-			slave_waite_helper:JobComplete(job_id)
-			if battle_waiter_helper and battle_job_id then
-				battle_waiter_helper:JobComplete(battle_job_id)
-			end
-		end
-	)
-	local delay_action = cc.DelayTime:create(0.5)
-	chess_sprite:runAction(cc.Sequence:create(delay_action, callback_action))
 end
 
 function Scene:OnActionStart(round)
@@ -808,106 +930,4 @@ end
 
 function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
 	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
-end
-
-function Scene:OnChessLifeChanged(id, new_life, old_life)
-	local chess = ChessPool:GetById(id)
-	if not chess then
-		asset(false)
-		return
-	end
-	return self:_OnChessLifeChanged(chess, new_life, old_life)
-end
-
-function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
-	local enemy_chess = EnemyChessPool:GetById(id)
-	if not enemy_chess then
-		asset(false)
-		return
-	end
-	return self:_OnChessLifeChanged(enemy_chess, new_life, old_life)
-end
-
-function Scene:_OnChessLifeChanged(chess, new_life, old_life)
-	local map = chess:GetMap()
-	local id = chess:GetId()
-	local sprite = self:GetObj("main", map:GetClassName(), id)
-	self:_OnLifeChanged(sprite, new_life - old_life)
-
-	if chess:TryCall("GetState") == Def.STATE_NORMAL then
-		return
-	end
-	local progress_hp = self:GetObj(map:GetClassName(), "hp", id)
-	if not progress_hp then
-		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
-		local rect = sprite:getBoundingBox()
-		local scale = sprite:getScale()
-
-		local progress_hp_rect = progress_hp:getBoundingBox()
-		progress_hp:setScaleX((rect.width - 4) / progress_hp_rect.width)
-
-		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
-		local progress_bg_rect = progress_bg:getBoundingBox()
-		progress_bg:setScaleX(rect.width / progress_hp_rect.width)
-
-		local x, y = rect.width * 0.5 / scale, (rect.height + progress_bg_rect.height * 0.5) / scale
-		progress_hp:setPosition(x, y)
-		self:AddObj(map:GetClassName(), "hp", id, progress_hp)
-			
-		progress_bg:setPosition(x, y)
-		sprite:addChild(progress_bg)
-		sprite:addChild(progress_hp)
-	end
-
-	local life = chess:GetLife()
-	local max_life = chess:GetMaxLife()
-
-	progress_hp:setPercentage((life / max_life) * 100)
-end
-
-function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)
-	local layer_main = self:GetLayer("main")
-	local text = tostring(change_value)
-	local param = {
-		color     = "red",
-		percent_x = percent_x or 0,
-		percent_y = percent_y or 0.5,
-		up_time   = 1,
-		up_y      = 40,
-		fade_time = 0.5,
-		zorder	  = 1000,
-		-- fade_up_y = 10,
-		text_scale = text_scale or 1.2,
-	}
-	if change_value > 0 then
-		param.color = "green"
-		text = "+"..text
-	end
-	FlyText:VerticalShake(layer_main, sprite, "fonts/img_font.fnt", text, param)
-end
-
-function Scene:OnSetSelfPlayerHP(new_life, old_life)
-	local change_value = new_life - old_life
-	local ui_frame = self:GetUI()
-	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "self")
-	local max_life = Player:GetMaxSelfHP()
-	local percentage = (new_life / max_life) * 100
-	progress_bar:setPercentage(percentage)
-	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
-
-	local label = Ui:GetElement(ui_frame, "LABEL", "self_hp")
-	label:setString(string.format("%3d / %3d", new_life, max_life))
-end
-
-function Scene:OnSetEnemyPlayerHP(new_life, old_life)
-	local change_value = new_life - old_life
-	local ui_frame = self:GetUI()
-	local progress_bar = Ui:GetElement(ui_frame, "PROGRESS_BAR", "enemy")
-	local max_life = Player:GetMaxEnemyHP()
-	local percentage = (new_life / max_life) * 100
-	progress_bar:setPercentage(percentage)
-	self:_OnLifeChanged(progress_bar, change_value, 0.5, 0.5, 3)
-
-	local label = Ui:GetElement(ui_frame, "LABEL", "enemy_hp")
-	label:setString(string.format("%3d / %3d", new_life, max_life))
 end

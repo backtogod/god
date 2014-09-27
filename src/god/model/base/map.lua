@@ -199,7 +199,7 @@ function SelfMap:_Init()
 	self.obj_pool = ChessPool
 
 	local spec_list = {
-		{2,2,1,4,4,},
+		{2,2,1,4,4,2},
 		{1,3,2,6,6,4},
 		{3,2,3,3,2,6},
 	}

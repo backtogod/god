@@ -19,6 +19,7 @@ Scene:DeclareListenEvent("CHESS.SET_DISPLAY_POSITION", "OnSelfChessSetDisplayPos
 Scene:DeclareListenEvent("CHESS.SET_TEMPLATE", "OnSelfChessSetTemplate")
 Scene:DeclareListenEvent("CHESS.WAIT_ROUND_CHANGED", "OnSelfChessWaitRoundChanged")
 Scene:DeclareListenEvent("CHESS.LIFE_CHANGED", "OnSelfChessLifeChanged")
+Scene:DeclareListenEvent("CHESS.LIFE_UPDATED", "OnSelfChessLifeUpdated")
 
 Scene:DeclareListenEvent("ENEMY_CHESS.ADD", "OnEnemyChessAdd")
 Scene:DeclareListenEvent("ENEMY_CHESS.REMOVE", "OnEnemyChessRemove")
@@ -27,6 +28,8 @@ Scene:DeclareListenEvent("ENEMY_CHESS.SET_DISPLAY_POSITION", "OnEnemyChessSetDis
 Scene:DeclareListenEvent("ENEMY_CHESS.SET_TEMPLATE", "OnEnemyChessSetTemplate")
 Scene:DeclareListenEvent("ENEMY_CHESS.WAIT_ROUND_CHANGED", "OnEnemyChessWaitRoundChanged")
 Scene:DeclareListenEvent("ENEMY_CHESS.LIFE_CHANGED", "OnEnemyChessLifeChanged")
+Scene:DeclareListenEvent("ENEMY_CHESS.LIFE_UPDATED", "OnEnemyChessLifeUpdated")
+
 
 Scene:DeclareListenEvent("PICKHELPER.PICK", "OnPickChess")
 Scene:DeclareListenEvent("PICKHELPER.CANCEL_PICK", "OnCancelPickChess")
@@ -73,7 +76,7 @@ function Scene:_Init()
 	assert(Mover:Init() == 1)
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
-	assert(GameStateMachine:Init(GameStateMachine.STATE_SELF_WATCH) == 1)
+	assert(GameStateMachine:Init(GameStateMachine.STATE_ENEMY_WATCH) == 1)
 	assert(Player:Init(100, 100) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT) == 1)
@@ -527,9 +530,93 @@ function Scene:OnChessWaitRoundChanged(chess, round)
 		label:setString(tostring(round))
 	else
 		if label then
-			puppet:RemoveElement("wait_round")
+			puppet:RemoveChildElement("wait_round")
 		end
 	end
+end
+
+function Scene:OnSelfChessLifeUpdated(id, new_life)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeUpated(chess, new_life)
+end
+
+function Scene:OnEnemyChessLifeUpdated(id, new_life)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeUpated(chess, new_life)
+end
+
+function Scene:OnChessLifeUpated(chess, new_life)
+	if chess:TryCall("GetState") == Def.STATE_NORMAL then
+		return
+	end
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+	local sprite = puppet:GetChildElement("body")
+
+	local progress_hp = puppet:GetChildElement("hp")
+	if not progress_hp then
+		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
+		local rect = sprite:getBoundingBox()
+
+		local progress_hp_rect = progress_hp:getBoundingBox()
+		progress_hp:setScaleX((rect.width - 4) / progress_hp_rect.width)
+
+		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
+		local progress_bg_rect = progress_bg:getBoundingBox()
+		progress_bg:setScaleX(rect.width / progress_hp_rect.width)
+
+		local x, y = 0, (rect.height + progress_bg_rect.height * 0.5)
+		puppet:AddChildElement("hp", progress_hp, x, y, 0, 12)
+		puppet:AddChildElement("hp_bg", progress_bg, x, y, 0, 11)
+
+		local rect = sprite:getBoundingBox()
+		label_hp = cc.Label:createWithSystemFont(tostring(life), nil, 30)
+		-- label_hp:setColor(Def:GetColor("red"))
+		puppet:AddChildElement("hp_num", label_hp, x, rect.height, 0, 12)
+	end
+
+	local life = chess:GetLife()
+	local max_life = chess:GetMaxLife()
+	progress_hp:setPercentage((life / max_life) * 100)
+
+	local label_hp = puppet:GetChildElement("hp_num")
+	label_hp:setString(tostring(life))
+end
+
+function Scene:OnSelfChessLifeChanged(id, new_life, old_life)
+	local chess = ChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeChanged(chess, new_life, old_life)
+end
+
+function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
+	local chess = EnemyChessPool:GetById(id)
+	if not chess then
+		assert(false)
+		return
+	end
+	return self:OnChessLifeChanged(chess, new_life, old_life)
+end
+
+function Scene:OnChessLifeChanged(chess, new_life, old_life)
+	local map = chess:GetMap()
+	local id = chess:GetId()
+	local puppet = self:GetObj("puppet", map:GetClassName(), id)
+
+	local sprite = puppet:GetChildElement("body")
+	self:_OnLifeChanged(puppet:GetSprite(), new_life - old_life, 0, 0)
 end
 
 function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
@@ -649,59 +736,6 @@ function Scene:ChessAttack(chess, target_chess, call_back)
 	)
 	local delay_action = cc.DelayTime:create(0.5)
 	chess_sprite:runAction(cc.Sequence:create(delay_action, callback_action))
-end
-
-function Scene:OnSelfChessLifeChanged(id, new_life, old_life)
-	local chess = ChessPool:GetById(id)
-	if not chess then
-		assert(false)
-		return
-	end
-	return self:OnChessLifeChanged(chess, new_life, old_life)
-end
-
-function Scene:OnEnemyChessLifeChanged(id, new_life, old_life)
-	local chess = EnemyChessPool:GetById(id)
-	if not chess then
-		assert(false)
-		return
-	end
-	return self:OnChessLifeChanged(chess, new_life, old_life)
-end
-
-function Scene:OnChessLifeChanged(chess, new_life, old_life)
-	local map = chess:GetMap()
-	local id = chess:GetId()
-	local puppet = self:GetObj("puppet", map:GetClassName(), id)
-
-	local sprite = puppet:GetChildElement("body")
-	self:_OnLifeChanged(puppet:GetSprite(), new_life - old_life, 0, 0)
-
-	if chess:TryCall("GetState") == Def.STATE_NORMAL then
-		return
-	end
-
-	local progress_hp = puppet:GetChildElement("hp")
-	if not progress_hp then
-		progress_hp = ProgressBar:GenerateByFile("god/xuetiao-lv.png", 100)
-		local rect = sprite:getBoundingBox()
-		local scale = sprite:getScale()
-
-		local progress_hp_rect = progress_hp:getBoundingBox()
-		progress_hp:setScaleX((rect.width - 4) / progress_hp_rect.width)
-
-		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
-		local progress_bg_rect = progress_bg:getBoundingBox()
-		progress_bg:setScaleX(rect.width / progress_hp_rect.width)
-
-		local x, y = 0, (rect.height + progress_bg_rect.height * 0.5)
-		puppet:AddChildElement("hp", progress_hp, x, y, 0, 12)
-		puppet:AddChildElement("hp_bg", progress_bg, x, y, 0, 11)
-	end
-
-	local life = chess:GetLife()
-	local max_life = chess:GetMaxLife()
-	progress_hp:setPercentage((life / max_life) * 100)
 end
 
 function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)

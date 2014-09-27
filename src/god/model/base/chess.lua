@@ -28,9 +28,10 @@ function Chess:_Init(id, template_id, x, y)
 	self.y = y
 
 	local data = ChessConfig:GetData(template_id)
-	self.life = data.base_life
-	self.step_life = data.base_life * 3
-	self.max_life = self.step_life * (data.wait_round + 1)
+	self.life = data.life
+	self.base_life = data.base_life
+	self.step_life = data.step_life
+	self.max_life = self.base_life + self.step_life * data.wait_round
 	self:AddComponent("action", "ACTION")
 	self.wait_round = -1
 	return 1
@@ -49,13 +50,21 @@ function Chess:GetStepLife()
 end
 
 function Chess:SetLife(life)
-	local old_life = self.life
 	self.life = life
-	local event_name = self:GetClassName() .. ".LIFE_CHANGED"
-	Event:FireEvent(event_name, self:GetId(), life, old_life)
+
+	local state = self:TryCall("GetState")
+	if state == Def.STATE_WALL then
+		local level = self:CalculateWallLevel(self:GetLife())
+		local wall_template_id = "wall_"..level
+		self:SetTemplateId(wall_template_id)
+	end
+
+	local event_name = self:GetClassName() .. ".LIFE_UPDATED"
+	Event:FireEvent(event_name, self:GetId(), self.life)
 end
 
-function Chess:ChangeLife(change_value)
+function Chess:ChangeLife(change_value, is_event)
+	local old_value = self.life
 	local new_value = self.life + change_value
 	if new_value > self.max_life then
 		new_value = self.max_life
@@ -63,6 +72,8 @@ function Chess:ChangeLife(change_value)
 		new_value = 0
 	end
 	self:SetLife(new_value)
+	local event_name = self:GetClassName() .. ".LIFE_CHANGED"
+	Event:FireEvent(event_name, self:GetId(), new_value, old_value)
 end
 
 function Chess:GetWaitRound()
@@ -118,11 +129,8 @@ end
 
 function Chess:SetTemplateId(template_id)
 	self.template_id = template_id
-	local data = ChessConfig:GetData(template_id)
-	self.max_life = data.base_life
 	local event_name = self:GetClassName() .. ".SET_TEMPLATE"
 	Event:FireEvent(event_name, self:GetId(), template_id)
-	self:SetLife(data.base_life)
 end
 
 function Chess:GetTemplateId()
@@ -140,10 +148,22 @@ function Chess:TransformtToWall()
 	end
 	ViewInterface:WaitChangeStateComplete(self, Def.STATE_ARMY, 
 		function()
-			self:SetTemplateId("wall_1")
+			self.max_life = Def.WALL_MAX_HP
+			self:SetLife(Def.WALL_DEFAULT_HP)
 		end
 	)
 	return 1
+end
+
+function Chess:CalculateWallLevel(life)
+	local value = math.ceil(life / Def.WALL_DEFAULT_HP)
+	if value > 3 then
+		value = 3
+	elseif value < 1 then
+		value = 1
+	end
+
+	return value
 end
 
 function Chess:TransformtToArmy()
@@ -156,41 +176,32 @@ function Chess:TransformtToArmy()
 			local data = ChessConfig:GetData(self.template_id)
 			assert(data.wait_round)
 			self:SetWaitRound(data.wait_round)
+			self:SetLife(self.base_life)
 		end
 	)
 	return 1
 end
 
-function Chess:GetWallLevel()
-	if self.template_id == "wall_1" then
-		return 1
-	elseif self.template_id == "wall_2" then
-		return 2
-	elseif self.template_id == "wall_3" then
-		return 3
-	end
-	return 0
-end
-
 function Chess:Evolution(chess_food)
 	local state = self:TryCall("GetState")
 	if state == Def.STATE_WALL then
-		local level = self:GetWallLevel()
-		local food_level = chess_food:GetWallLevel()
-		local final_level = level + food_level
-		if final_level > 3 then
-			final_level = 3
-		end
-		self:SetTemplateId("wall_"..final_level)
-	elseif state == Def.STATE_ARMY then
 		self:ChangeLife(chess_food:GetLife())
-		local min_round = self:GetWaitRound()
-		local food_round = chess_food:GetWaitRound()
-		if food_round < min_round then
-			self:SetWaitRound(food_round)
-		end
+	elseif state == Def.STATE_ARMY then
+		self:MergetArmy(chess_food)
 	end
 	return 1
+end
+
+function Chess:MergetArmy(chess_target)
+	self.step_life = self.step_life + chess_target.step_life
+	self.max_life = self.max_life + chess_target.max_life
+	self:SetLife(self:GetLife() + chess_target:GetLife())
+
+	local min_round = self:GetWaitRound()
+	local food_round = chess_target:GetWaitRound()
+	if food_round < min_round then
+		self:SetWaitRound(food_round)
+	end
 end
 
 function Chess:GetOppositeMap()

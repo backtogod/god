@@ -106,9 +106,12 @@ function ActionMgr:NextRound()
 		Mover:RemoveMapHole(SelfMap)
 		Mover:RemoveMapHole(EnemyMap)
 	end
-	ViewInterface:WaitRoundStartFinish(
-		0.5,
-		100,
+	local text_msg = "轮到你行动了"
+	if GameStateMachine:IsInEnemyAction() == 1 then
+		text_msg = "对方回合"
+	end
+	ViewInterface:WaitPlayTipFinish(
+		0.5, 100, text_msg,
 		function ()
 			Battle:BattleStart(MoveChess)
 		end

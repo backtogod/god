@@ -31,8 +31,20 @@ end
 
 function Player:SetCurSelfHP(hp)
 	local old_hp = self.cur_self_hp
+	if old_hp == hp then
+		return
+	end
 	self.cur_self_hp = hp
 	Event:FireEvent("PLAYER.SET_SELF_HP", hp, old_hp)
+
+	if hp <= 0 then
+		ViewInterface:WaitPlayTipFinish(
+			0.5, 100, "Defeat!",
+			function ()
+				SceneMgr:UnLoadCurrentScene()
+			end
+		)
+	end
 end
 
 function Player:GetCurSelfHP()
@@ -55,8 +67,20 @@ end
 
 function Player:SetCurEnemyHP(hp)
 	local old_hp = self.cur_enemy_hp
+	if old_hp == hp then
+		return
+	end
 	self.cur_enemy_hp = hp
 	Event:FireEvent("PLAYER.SET_ENEMY_HP", hp, old_hp)
+
+	if hp <= 0 then
+		ViewInterface:WaitPlayTipFinish(
+			0.5, 100, "Victory!",
+			function ()
+				SceneMgr:UnLoadCurrentScene()
+			end
+		)
+	end
 end
 
 function Player:GetCurEnemyHP()

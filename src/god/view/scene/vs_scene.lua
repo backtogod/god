@@ -81,7 +81,7 @@ function Scene:_Init()
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(stage_config.init_state) == 1)
-	assert(Player:Init(100, 100) == 1)
+	assert(Player:Init(50, 50) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.self_spec, stage_config.self_wave_count) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.enemy_spec, stage_config.enemy_wave_count) == 1)
 	assert(PickHelper:Init(1) == 1)
@@ -936,7 +936,11 @@ function Scene:OnComboChanged(combo_count)
 	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
 end
 
-function Scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
+function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
+	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+end
+
+function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
 	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
 	local job_id = round_waiter:WaitJob(max_wait_time)
 
@@ -947,25 +951,17 @@ function Scene:StartRoundStart(min_wait_time, max_wait_time, call_back)
 		return
 	end
 	label:setVisible(true)
-	if GameStateMachine:IsInEnemyAction() == 1 then
-		label:setString("对方回合")
-	else
-		label:setString("轮到你行动了")		
-	end
+	label:setString(text_msg)
 	label:setScale(0.1)
 
-	local scale_to = cc.ScaleTo:create(0.8, 1)
-	local delay = cc.DelayTime:create(1)
-	local call_back = cc.CallFunc:create(
+	local action_scale_to = cc.ScaleTo:create(0.8, 1)
+	local action_delay = cc.DelayTime:create(1)
+	local action_call_back = cc.CallFunc:create(
 		function()
 			label:setVisible(false)
 			round_waiter:JobComplete(job_id)
 		end
 	)
 	label:stopAllActions()
-	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
-end
-
-function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
-	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+	label:runAction(cc.Sequence:create(action_scale_to, action_delay, action_call_back))
 end

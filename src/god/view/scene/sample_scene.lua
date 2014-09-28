@@ -52,12 +52,13 @@ end
 
 function Scene:TestCase()
 	local element_list = {}
-	for stage_name, data in pairs(VSStageConfig.test_stage_data) do
+	for _, data in ipairs(VSStageConfig.test_stage_data) do
+
 		local element = {
 			{
-				item_name = data.case_name or stage_name .. "(?)",
+				item_name = data.case_name or data.stage_name .. "(?)",
 				callback_function = function ()
-					SceneMgr:LoadScene("VSScene", stage_name)
+					SceneMgr:LoadScene(data.data.template_scene, data.stage_name)
 				end,
 			},
 		}

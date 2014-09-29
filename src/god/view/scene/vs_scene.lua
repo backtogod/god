@@ -93,8 +93,8 @@ function Scene:_Init()
 end
 
 function Scene:InitUI()
-	self:AddReturnMenu()
-	self:AddReloadMenu() 
+	self:AddReturnMenu(50)
+	self:AddReloadMenu(50) 
 
 	self:SetBackGroundImage({"god/map.png"}, 0)
 
@@ -296,47 +296,15 @@ function Scene:SetMapChessPosition(map, id, logic_x, logic_y)
 end
 
 function Scene:OnTouchBegan(x, y)
-	local result = TouchInput:OnTouchBegan(x, y)
-	if result == 1 then
-		local map = GameStateMachine:GetActiveMap()
-		local logic_x, logic_y = map:Pixel2Logic(x, y)
-		if logic_x < 1 then
-			logic_x = 1
-		elseif logic_x > Def.MAP_WIDTH then
-			logic_x = Def.MAP_WIDTH
-		end
-		local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
-		local highlight_green = self:GetObj("main", "draw", "highlight_green")
-		highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
-		highlight_green:setVisible(true)
-	end
+	return TouchInput:OnTouchBegan(x, y)
 end
 
 function Scene:OnTouchMoved(x, y)
-	local result = TouchInput:OnTouchMoved(x, y)
-	if not result then
-		return
-	end
-	local map = GameStateMachine:GetActiveMap()
-	local logic_x, logic_y = map:Pixel2Logic(x, y)
-	if logic_x < 1 then
-		logic_x = 1
-	elseif logic_x > Def.MAP_WIDTH then
-		logic_x = Def.MAP_WIDTH
-	end
-	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
-	if result == 0 then
-		local highlight_red = self:GetObj("main", "draw", "highlight_red")
-		highlight_red:setPosition(highlight_x, visible_size.height * 0.5)
-		highlight_red:setVisible(true)
-
-		local highlight_green = self:GetObj("main", "draw", "highlight_green")
-		highlight_green:setVisible(false)
-	end
+	return TouchInput:OnTouchMoved(x, y)
 end
 
 function Scene:OnTouchEnded(x, y)
-	local result = TouchInput:OnTouchEnded(x, y)
+	return TouchInput:OnTouchEnded(x, y, self:IsMove())
 end
 
 function Scene:OnSelfChessAdd(id, template_id, logic_x, logic_y)
@@ -795,7 +763,10 @@ function Scene:OnPickChess(id, logic_x, logic_y)
 	local map = GameStateMachine:GetActiveMap()
 	local map_name = map:GetClassName()
 	local chess = self:GetObj("main", map_name, id)
-	chess:setOpacity(200)
+	local puppet = self:GetObj("puppet", map_name, id)
+	local sprite = puppet:GetChildElement("body")
+	sprite:setOpacity(100)
+
 	local copy_chess = cc.Sprite:createWithTexture(chess:getTexture())
 	copy_chess:setAnchorPoint(cc.p(0.5, 0))
 	copy_chess:setOpacity(100)
@@ -804,6 +775,11 @@ function Scene:OnPickChess(id, logic_x, logic_y)
 	copy_chess:setScale(scale_x)
 	self:AddObj("main", map_name, "copy", copy_chess)
 	self:SetMapChessPosition(map, "copy", logic_x, logic_y)
+
+	local highlight_x, highlight_y = map:Logic2Pixel(logic_x, logic_y)
+	local highlight_green = self:GetObj("main", "draw", "highlight_green")
+	highlight_green:setPosition(highlight_x, visible_size.height * 0.5)
+	highlight_green:setVisible(true)
 end
 
 function Scene:OnCancelPickChess(id)
@@ -812,7 +788,9 @@ function Scene:OnCancelPickChess(id)
 	local chess = self:GetObj("main", map_name, id)
 	local logic_chess = map.obj_pool:GetById(id)
 	self:SetMapChessPosition(map, id, logic_chess.x, logic_chess.y)
-	chess:setOpacity(255)
+	local puppet = self:GetObj("puppet", map_name, id)
+	local sprite = puppet:GetChildElement("body")
+	sprite:setOpacity(255)
 	self:RemoveObj("main", map_name, "copy")
 
 	local highlight_green = self:GetObj("main", "draw", "highlight_green")
@@ -824,10 +802,13 @@ end
 
 function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	local map = GameStateMachine:GetActiveMap()
-	local chess = self:GetObj("main", map:GetClassName(), id)
+	local map_name = map:GetClassName()
+	local chess = self:GetObj("main", map_name, id)
 	assert(chess)
-	chess:setOpacity(255)
-	self:RemoveObj("main", map:GetClassName(), "copy")
+	local puppet = self:GetObj("puppet", map_name, id)
+	local sprite = puppet:GetChildElement("body")
+	sprite:setOpacity(255)
+	self:RemoveObj("main", map_name, "copy")
 
 	local highlight_green = self:GetObj("main", "draw", "highlight_green")
 	highlight_green:setVisible(false)

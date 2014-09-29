@@ -63,6 +63,26 @@ VSStageConfig.test_stage_data = {
 			init_state = GameStateMachine.STATE_ENEMY_WATCH,
 		},
 	},	
+	{
+		case_name = "Destory Chess",
+		stage_name = "test_destroy",
+		data = {
+			template_scene = "VSScene",			
+			self_spec = {
+				{1,2,1,3,3,6,},
+				{6,5,2,3,2,3,},
+				{2,2,1,4,5,4,},
+				{3,2,1,4,5,4,},
+			},
+			self_wave_count = 4,
+			enemy_spec = {
+				{1,2,1,3,3,6,},
+				{6,5,2,3,2,3,},
+			},
+			enemy_wave_count = 2,
+			init_state = GameStateMachine.STATE_ENEMY_WATCH,
+		},
+	},	
 }
 
 for k, v in pairs(VSStageConfig.test_stage_data) do

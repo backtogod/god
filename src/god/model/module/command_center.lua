@@ -46,12 +46,34 @@ function CommandCenter:ExecuteCommand(state, command)
 	return exec_fun(self, map, unpack(command, 2))
 end
 
-function CommandCenter:_PickChess(map, logic_x, logic_y)
-	local chess_id, pick_y = PickRule:GetCanPick(map, logic_x, logic_y)
+function CommandCenter:_PickChess(map, logic_x)
+	local chess_id, pick_y = PickRule:GetCanPick(map, logic_x)
 	if chess_id then
 		local logic_chess = map.obj_pool:GetById(chess_id)
 		PickHelper:Pick(chess_id, logic_x, pick_y)
 		return chess_id
+	end
+end
+
+function CommandCenter:_DestoryChesss(map, logic_x, logic_y)
+	local chess_id = map:GetCell(logic_x, logic_y)
+	if chess_id and chess_id > 0 then
+		local logic_chess = map.obj_pool:GetById(chess_id)
+		assert(logic_chess)
+		map.obj_pool:Remove(chess_id)
+		ActionMgr:ResetCombo()
+		ActionMgr:ChangeRestRoundNum(-1)
+		ViewInterface:WaitWatchEnd(0.5, 
+			function()
+				if ActionMgr:GetRestRoundNum() > 0 then
+					Event:FireEvent("GAME.AI_ACTIVE")
+				else
+					ActionMgr:NextRound()
+				end
+			end
+		)
+		Mover:RemoveMapHole(map)
+		return 1
 	end
 end
 
@@ -119,6 +141,7 @@ end
 
 CommandCenter.COMMAND_LIST = {
 	PickChess = CommandCenter._PickChess,
+	DestoryChess = CommandCenter._DestoryChesss,
 	CancelPickChess = CommandCenter._CancelPickChess,
 	TryMovePickChess = CommandCenter._TryMovePickChess,
 	TryDropChess = CommandCenter._TryDropChess,

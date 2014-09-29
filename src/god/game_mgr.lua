@@ -59,7 +59,7 @@ function GameMgr:_Init()
             action_node:AddAllowRule(state, allow_state)
         end
     end
-	SceneMgr:FirstLoadScene("Sample")
+	SceneMgr:FirstLoadScene("MainMenu")
 	return 1
 end
 

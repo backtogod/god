@@ -24,7 +24,7 @@ AddProjectScript("controller/touch_input.lua")
 
 --Load View Script
 AddProjectScript("view/view_interface.lua")
-AddProjectScript("view/scene/sample_scene.lua")
+AddProjectScript("view/scene/main_menu_scene.lua")
 AddProjectScript("view/scene/vs_scene.lua")
 AddProjectScript("view/scene/boss_scene.lua")
 

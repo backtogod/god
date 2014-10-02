@@ -12,6 +12,15 @@ Scene.property = {
 	-- can_drag = 1,
 }
 
+-- Scene.cocos_ui = {
+-- 	["ui/god_ui/god_ui.json"] = {
+-- 		name = "GodUI",
+-- 		button = {
+-- 			Spawn = "btn_spawn", End = "btn_end", Return = "btn_return",
+-- 		},
+-- 	},
+-- }
+
 Scene:DeclareListenEvent("CHESS.ADD", "OnSelfChessAdd")
 Scene:DeclareListenEvent("CHESS.REMOVE", "OnSelfChessRemove")
 Scene:DeclareListenEvent("CHESS.SET_POSITION", "OnSelfChessSetPosition")
@@ -45,6 +54,7 @@ Scene:DeclareListenEvent("PLAYER.SET_ENEMY_HP", "OnSetEnemyPlayerHP")
 
 function Scene:_Uninit( ... )
 	
+	Battle:Uninit()
 	VSRobot:Uninit()
 	EnemyMap:Uninit()
 	SelfMap:Uninit()
@@ -81,11 +91,12 @@ function Scene:_Init()
 	assert(CommandCenter:Init() == 1)
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(stage_config.init_state) == 1)
-	assert(Player:Init(50, 50) == 1)
+	assert(Player:Init(stage_config.self_max_hp, stage_config.self_hp, stage_config.enemy_max_np, stage_config.enemy_np) == 1)
 	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.self_spec, stage_config.self_wave_count) == 1)
 	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.enemy_spec, stage_config.enemy_wave_count) == 1)
 	assert(PickHelper:Init(1) == 1)
 	assert(VSRobot:Init() == 1)
+	assert(Battle:Init() == 1)
 
 	-- SelfMap:Debug()
 	-- EnemyMap:Debug()
@@ -94,9 +105,9 @@ end
 
 function Scene:InitUI()
 	self:AddReturnMenu(50)
-	self:AddReloadMenu(50) 
+	self:AddReloadMenu(50)
 
-	self:SetBackGroundImage({"god/map.png"}, 0)
+	-- self:SetBackGroundImage({"god/map.png"}, 0)
 
 	local highlight_green = cc.DrawNode:create()
 	local height = Def.MAP_OFFSET_Y + Def.MAP_CELL_HEIGHT * Def.MAP_HEIGHT
@@ -125,7 +136,7 @@ function Scene:InitUI()
 	self:AddObj("main", "draw", "highlight_red", highlight_red)
 
 	self:InitDebugUI()	
-	-- self:DrawGrip()	
+	self:DrawGrip()	
 	self:InitButtonMenu()
 	self:InitPlayerHPUI()
 
@@ -141,6 +152,25 @@ function Scene:InitUI()
 	return 1
 end
 
+function Scene:OnCocosButtonEvent(ui_name, button_name, event)
+	if event == Ui.TOUCH_EVENT_ENDED then
+		if ui_name == "GodUI" then
+			if button_name == "Spawn" then
+				if GameStateMachine:CanOperate() ~= 1 then
+        			return
+        		end
+        		CommandCenter:ReceiveCommand({"SpawnChess"})
+			elseif button_name == "End" then
+				if GameStateMachine:CanOperate() ~= 1 then
+        			return
+        		end
+        		CommandCenter:ReceiveCommand({"EndAction"})
+			elseif button_name == "Return" then
+				SceneMgr:UnLoadCurrentScene()
+			end
+		end
+	end
+end
 function Scene:InitDebugUI()
 	local ui_frame = self:GetUI()
 
@@ -216,7 +246,8 @@ end
 function Scene:InitPlayerHPUI()
 	local ui_frame = self:GetUI()
 
-	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1.5)
+	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT)
+	y = y - 80
 	local progress_self_bg = cc.Sprite:create("god/xuetiao-di.png")
 	progress_self_bg:setScale(4)
 	progress_self_bg:setAnchorPoint(cc.p(0, 0.5))
@@ -232,7 +263,8 @@ function Scene:InitPlayerHPUI()
 	label_self_hp:setTextColor(cc.c4b(100, 200, 255, 255))
 	Ui:AddElement(ui_frame, "LABEL", "self_hp", rect.x + rect.width / 2, rect.y + rect.height / 2, label_self_hp)
 
-	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT + 1.5)
+	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT)
+	y = y + 80
 
 	local progress_enemy_bg = cc.Sprite:create("god/xuetiao-di.png")
 	progress_enemy_bg:setScale(4)
@@ -257,24 +289,24 @@ function Scene:DrawGrip( ... )
 		draw_node:drawSegment(
 			cc.p(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
 			cc.p(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y),
-			1, cc.c4f(1, 1, 1, 0.3))
+			1, cc.c4f(0, 1, 0, 1))
 		--enemy
 		draw_node:drawSegment(
 			cc.p(Map:Mirror(offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
 			cc.p(Map:Mirror(Def.MAP_WIDTH * Def.MAP_CELL_WIDTH + offset_x, (1 - row) * Def.MAP_CELL_HEIGHT + offset_y)),
-			1, cc.c4f(1, 1, 1, 0.3))
+			1, cc.c4f(0, 0, 1, 1))
 	end
 
 	for column = 1, Def.MAP_WIDTH + 1 do
 		draw_node:drawSegment(
 			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y),
 			cc.p((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y),
-			3, cc.c4f(0, 1, 0, 1))
+			1, cc.c4f(0, 1, 0, 1))
 		--enemy
 		draw_node:drawSegment(
 			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x,  offset_y)),
 			cc.p(Map:Mirror((column - 1) * Def.MAP_CELL_WIDTH + offset_x, - Def.MAP_HEIGHT  * Def.MAP_CELL_HEIGHT  + offset_y)),
-			3, cc.c4f(0, 0, 1, 1))
+			1, cc.c4f(0, 0, 1, 1))
 	end
 	self:AddObj("main", "draw", "grid", draw_node)
 end
@@ -284,7 +316,11 @@ function Scene:GenerateChessSprite(image_name)
 	sprite:setAnchorPoint(cc.p(0.5, 0))
 	local rect = sprite:getBoundingBox()
 	local scale_x = Def.MAP_CELL_WIDTH / rect.width
-	sprite:setScale(scale_x)
+	local scale_y = Def.MAP_CELL_HEIGHT / rect.height
+	sprite:setScaleX(scale_x)
+	if scale_y < 1 then
+		sprite:setScaleY(scale_y)
+	end
 	return sprite
 end
 
@@ -495,7 +531,7 @@ function Scene:OnChessWaitRoundChanged(chess, round)
 		if not label then
 			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
 			local rect = chess_sprite:getBoundingBox()
-			local scale = chess_sprite:getScale()
+			local scale = chess_sprite:getScaleX()
 			
 			puppet:AddChildElement("wait_round", label, 0, Def.MAP_CELL_HEIGHT * 0.5, 0, 11)
 		end
@@ -698,19 +734,22 @@ function Scene:ChessAttack(chess, target_chess, call_back)
 	local callback_action = cc.CallFunc:create(
 		function()
 			if call_back and type(call_back) == "function" then
-				call_back(
-)			end
+				call_back()
+			end
 			slave_waite_helper:JobComplete(job_id)
 			if battle_waiter_helper and battle_job_id then
 				battle_waiter_helper:JobComplete(battle_job_id)
 			end
 		end
 	)
-	local delay_action = cc.DelayTime:create(0.5)
+	local delay_action = cc.DelayTime:create(0.1)
 	chess_sprite:runAction(cc.Sequence:create(delay_action, callback_action))
 end
 
 function Scene:_OnLifeChanged(sprite, change_value, percent_x, percent_y, text_scale)
+	if change_value == 0 then
+		return
+	end
 	local layer_main = self:GetLayer("main")
 	local text = tostring(change_value)
 	local param = {
@@ -918,7 +957,10 @@ function Scene:OnComboChanged(combo_count)
 end
 
 function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
-	return self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+	local waiter = self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+	print("new battle waiter")
+	waiter:EnableDebug(1)
+	return waiter
 end
 
 function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)

@@ -111,6 +111,27 @@ VSStageConfig.bugs_data = {
 			enemy_wave_count = 4,
 			init_state = GameStateMachine.STATE_ENEMY_WATCH,
 		},
+	},
+	{
+		case_name = "Bug#2 Mulit Attack same time",
+		stage_name = "BugMultiAttack",
+		data = {
+			template_scene = "VSScene",			
+			self_spec = {
+				{2,2,1,3,3,6,},
+				{2,5,2,3,2,3,},
+				{2,2,1,4,5,4,},
+				{1,2,1,4,5,4,},
+			},
+			self_wave_count = 4,
+			enemy_spec = {
+				{2,2,1,3,3,6,},
+				{3,5,2,3,2,3,},
+				{2,2,1,4,5,4,},
+			},
+			enemy_wave_count = 3,
+			init_state = GameStateMachine.STATE_ENEMY_WATCH,
+		},
 	},	
 }
 

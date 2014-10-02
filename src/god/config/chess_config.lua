@@ -19,14 +19,14 @@ ChessConfig.template = {
 		wait_round = 1,
 	},
 	[2] = {
-		image = "god/lvmaochong.png",
+		image = "god/xiaoshuiguai.png",
 		life = 2,
 		base_life = 2,
 		step_life = 1,
 		wait_round = 2,
 	},
 	[3] = {
-		image = "god/jiancichong.png",
+		image = "god/wenxiangwa.png",
 		life = 3,
 		base_life = 4,
 		step_life = 1,
@@ -47,7 +47,7 @@ ChessConfig.template = {
 		wait_round = 4,
 	},
 	[6] = {
-		image = "god/didigui.png",
+		image = "god/abaishe.png",
 		life = 3,
 		base_life = 6,
 		step_life = 1,

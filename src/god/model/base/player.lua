@@ -19,14 +19,18 @@ function Player:Uninit()
 	return 1
 end
 
-function Player:Init(self_hp, enemy_hp)
-	self.max_self_hp = self_hp
-	self.cur_self_hp = self_hp
-
-	self.max_enemy_hp = enemy_hp
-	self.cur_enemy_hp = enemy_hp
+function Player:Init(self_max_hp, self_hp, enmey_max_hp, enemy_hp)
+	self:InitSelfHP(self_max_hp, self_hp)
+	self:InitEnemyHP(enmey_max_hp, enemy_hp)
 
 	return 1
+end
+
+function Player:InitSelfHP(max_hp, hp)
+	self.max_self_hp = max_hp or Def.DEFAULT_PLAYER_HP
+	self.cur_self_hp = hp or self.max_self_hp
+
+	Event:FireEvent("PLAYER.SET_SELF_HP", self.cur_self_hp, self.cur_self_hp)
 end
 
 function Player:SetCurSelfHP(hp)
@@ -63,6 +67,13 @@ function Player:ChangeCurSelfHP(change_value)
 	end
 
 	self:SetCurSelfHP(new_hp)
+end
+
+function Player:InitEnemyHP(max_hp, hp)
+	self.max_enemy_hp = max_hp or Def.DEFAULT_PLAYER_HP
+	self.cur_enemy_hp = hp or self.max_enemy_hp
+
+	Event:FireEvent("PLAYER.SET_ENEMY_HP", self.cur_enemy_hp, self.cur_enemy_hp)
 end
 
 function Player:SetCurEnemyHP(hp)

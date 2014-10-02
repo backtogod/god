@@ -163,6 +163,7 @@ function VSRobot:SelectPick(map)
 		assert(strategy_func)
 		pick_x, move_x = strategy_func(self, map)
 		if pick_x and move_x then
+			print(strategy_name, pick_x, move_x)
 			return pick_x, move_x
 		end
 	end

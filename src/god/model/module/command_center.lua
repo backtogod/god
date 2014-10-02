@@ -62,6 +62,7 @@ function CommandCenter:_DestoryChesss(map, logic_x, logic_y)
 		assert(logic_chess)
 		map.obj_pool:Remove(chess_id)
 		ActionMgr:ResetCombo()
+		ActionMgr:OnCombo()
 		ActionMgr:ChangeRestRoundNum(-1)
 		ViewInterface:WaitWatchEnd(0.5, 
 			function()

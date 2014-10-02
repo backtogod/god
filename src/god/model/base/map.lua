@@ -111,10 +111,13 @@ end
 
 function Map:GetArmyList()
 	local result = {}
-	for id, _ in pairs(self.cell_list) do
+	for id, pos in pairs(self.cell_list) do
 		local chess = self.obj_pool:GetById(id)
 		if chess and chess:TryCall("GetState") == Def.STATE_ARMY then
-			result[#result + 1] = chess
+			if not result[pos.y] then
+				result[pos.y] = {}
+			end
+			table.insert(result[pos.y], chess)
 		end
 	end
 	return result

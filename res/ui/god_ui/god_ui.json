@@ -1,0 +1,365 @@
+{
+  "version": "1.0.0.0",
+  "designWidth": 640,
+  "designHeight": 1136,
+  "dataScale": 1.0,
+  "textures": [],
+  "texturesPng": [
+    "top_ui.png",
+    "button_green_n.png",
+    "button_green_p.png",
+    "button_green_un.png",
+    "upgrade.png",
+    "train.png",
+    "sell.png",
+    "research.png"
+  ],
+  "nodeTree": {
+    "options": {
+      "$type": "EditorCommon.JsonModel.Component.GUI.RootGUISurrogate, EditorCommon",
+      "visible": true,
+      "frameEvent": null,
+      "name": "Node",
+      "classname": "Node"
+    },
+    "children": [
+      {
+        "options": {
+          "$type": "EditorCommon.JsonModel.Component.GUI.ImageViewSurrogate, EditorCommon",
+          "fileNameData": {
+            "resourceType": 0,
+            "path": "top_ui.png",
+            "plistFile": ""
+          },
+          "scale9Width": 640.0,
+          "scale9Height": 70.0,
+          "y": 1136.0,
+          "visible": true,
+          "classType": "ImageView",
+          "width": 640.0,
+          "height": 70.0,
+          "positionPercentY": 3.55,
+          "sizePercentX": 0.166666672,
+          "sizePercentY": 0.25,
+          "actionTag": 128747961,
+          "tag": 2,
+          "anchorPointX": 0.0,
+          "anchorPointY": 1.0,
+          "ignoreSize": true,
+          "name": "top_ui_bg",
+          "classname": "ImageView"
+        },
+        "children": [
+          {
+            "options": {
+              "$type": "EditorCommon.JsonModel.Component.GUI.ButtonSurrogate, EditorCommon",
+              "normalData": {
+                "resourceType": 0,
+                "path": "button_green_n.png",
+                "plistFile": ""
+              },
+              "pressedData": {
+                "resourceType": 0,
+                "path": "button_green_p.png",
+                "plistFile": ""
+              },
+              "disabledData": {
+                "resourceType": 0,
+                "path": "button_green_un.png",
+                "plistFile": ""
+              },
+              "text": "",
+              "fontSize": 27,
+              "textColorR": 223,
+              "textColorG": 23,
+              "textColorB": 23,
+              "capInsetsWidth": 1.0,
+              "capInsetsHeight": 1.0,
+              "scale9Width": 103.0,
+              "scale9Height": 40.0,
+              "x": 68.0,
+              "y": -33.0,
+              "scaleY": 1.3,
+              "touchAble": true,
+              "visible": true,
+              "classType": "Button",
+              "width": 103.0,
+              "height": 40.0,
+              "positionType": 1,
+              "positionPercentX": 0.10625,
+              "positionPercentY": -0.471428573,
+              "sizePercentX": 0.1609375,
+              "sizePercentY": 0.5714286,
+              "actionTag": 721016480,
+              "tag": 3,
+              "name": "btn_spawn",
+              "classname": "Button"
+            },
+            "children": [
+              {
+                "options": {
+                  "$type": "EditorCommon.JsonModel.Component.GUI.ImageViewSurrogate, EditorCommon",
+                  "fileNameData": {
+                    "resourceType": 0,
+                    "path": "upgrade.png",
+                    "plistFile": ""
+                  },
+                  "scale9Width": 49.0,
+                  "scale9Height": 49.0,
+                  "scaleY": 0.8,
+                  "visible": true,
+                  "classType": "ImageView",
+                  "width": 49.0,
+                  "height": 49.0,
+                  "sizePercentX": 0.776699,
+                  "sizePercentY": 2.0,
+                  "actionTag": 218273451,
+                  "tag": 4,
+                  "ignoreSize": true,
+                  "name": "ImageView_3",
+                  "classname": "ImageView"
+                },
+                "children": [],
+                "classname": "ImageView"
+              }
+            ],
+            "classname": "Button"
+          },
+          {
+            "options": {
+              "$type": "EditorCommon.JsonModel.Component.GUI.ButtonSurrogate, EditorCommon",
+              "normalData": {
+                "resourceType": 0,
+                "path": "button_green_n.png",
+                "plistFile": ""
+              },
+              "pressedData": {
+                "resourceType": 0,
+                "path": "button_green_p.png",
+                "plistFile": ""
+              },
+              "disabledData": {
+                "resourceType": 0,
+                "path": "button_green_un.png",
+                "plistFile": ""
+              },
+              "text": "",
+              "fontSize": 27,
+              "textColorR": 223,
+              "textColorG": 23,
+              "textColorB": 23,
+              "capInsetsWidth": 1.0,
+              "capInsetsHeight": 1.0,
+              "scale9Width": 103.0,
+              "scale9Height": 40.0,
+              "x": 187.0,
+              "y": -33.0,
+              "scaleY": 1.3,
+              "touchAble": true,
+              "visible": true,
+              "classType": "Button",
+              "width": 103.0,
+              "height": 40.0,
+              "positionType": 1,
+              "positionPercentX": 0.2921875,
+              "positionPercentY": -0.471428573,
+              "sizePercentX": 0.1609375,
+              "sizePercentY": 0.5714286,
+              "actionTag": 317638829,
+              "tag": 5,
+              "name": "btn_test",
+              "classname": "Button"
+            },
+            "children": [
+              {
+                "options": {
+                  "$type": "EditorCommon.JsonModel.Component.GUI.ImageViewSurrogate, EditorCommon",
+                  "fileNameData": {
+                    "resourceType": 0,
+                    "path": "train.png",
+                    "plistFile": ""
+                  },
+                  "scale9Width": 50.0,
+                  "scale9Height": 41.0,
+                  "scaleY": 0.8,
+                  "visible": true,
+                  "classType": "ImageView",
+                  "width": 50.0,
+                  "height": 41.0,
+                  "sizePercentX": 0.776699,
+                  "sizePercentY": 2.0,
+                  "actionTag": 492518662,
+                  "tag": 6,
+                  "ignoreSize": true,
+                  "name": "ImageView_3",
+                  "classname": "ImageView"
+                },
+                "children": [],
+                "classname": "ImageView"
+              }
+            ],
+            "classname": "Button"
+          },
+          {
+            "options": {
+              "$type": "EditorCommon.JsonModel.Component.GUI.ButtonSurrogate, EditorCommon",
+              "normalData": {
+                "resourceType": 0,
+                "path": "button_green_n.png",
+                "plistFile": ""
+              },
+              "pressedData": {
+                "resourceType": 0,
+                "path": "button_green_p.png",
+                "plistFile": ""
+              },
+              "disabledData": {
+                "resourceType": 0,
+                "path": "button_green_un.png",
+                "plistFile": ""
+              },
+              "text": "",
+              "fontSize": 27,
+              "textColorR": 223,
+              "textColorG": 23,
+              "textColorB": 23,
+              "capInsetsWidth": 1.0,
+              "capInsetsHeight": 1.0,
+              "scale9Width": 103.0,
+              "scale9Height": 40.0,
+              "x": 465.0,
+              "y": -33.0,
+              "scaleY": 1.3,
+              "touchAble": true,
+              "visible": true,
+              "classType": "Button",
+              "width": 103.0,
+              "height": 40.0,
+              "positionType": 1,
+              "positionPercentX": 0.7265625,
+              "positionPercentY": -0.471428573,
+              "sizePercentX": 0.1609375,
+              "sizePercentY": 0.5714286,
+              "actionTag": 422479967,
+              "tag": 7,
+              "name": "btn_end",
+              "classname": "Button"
+            },
+            "children": [
+              {
+                "options": {
+                  "$type": "EditorCommon.JsonModel.Component.GUI.ImageViewSurrogate, EditorCommon",
+                  "fileNameData": {
+                    "resourceType": 0,
+                    "path": "sell.png",
+                    "plistFile": ""
+                  },
+                  "scale9Width": 35.0,
+                  "scale9Height": 50.0,
+                  "x": 1.0,
+                  "scaleY": 0.8,
+                  "visible": true,
+                  "classType": "ImageView",
+                  "width": 35.0,
+                  "height": 50.0,
+                  "positionPercentX": 0.009708738,
+                  "sizePercentX": 0.776699,
+                  "sizePercentY": 2.0,
+                  "actionTag": 321481771,
+                  "tag": 8,
+                  "ignoreSize": true,
+                  "name": "ImageView_3",
+                  "classname": "ImageView"
+                },
+                "children": [],
+                "classname": "ImageView"
+              }
+            ],
+            "classname": "Button"
+          },
+          {
+            "options": {
+              "$type": "EditorCommon.JsonModel.Component.GUI.ButtonSurrogate, EditorCommon",
+              "normalData": {
+                "resourceType": 0,
+                "path": "button_green_n.png",
+                "plistFile": ""
+              },
+              "pressedData": {
+                "resourceType": 0,
+                "path": "button_green_p.png",
+                "plistFile": ""
+              },
+              "disabledData": {
+                "resourceType": 0,
+                "path": "button_green_un.png",
+                "plistFile": ""
+              },
+              "text": "",
+              "fontSize": 27,
+              "textColorR": 223,
+              "textColorG": 23,
+              "textColorB": 23,
+              "capInsetsWidth": 1.0,
+              "capInsetsHeight": 1.0,
+              "scale9Width": 103.0,
+              "scale9Height": 40.0,
+              "x": 576.0,
+              "y": -33.0,
+              "scaleY": 1.3,
+              "touchAble": true,
+              "visible": true,
+              "classType": "Button",
+              "width": 103.0,
+              "height": 40.0,
+              "positionType": 1,
+              "positionPercentX": 0.9,
+              "positionPercentY": -0.471428573,
+              "sizePercentX": 0.1609375,
+              "sizePercentY": 0.5714286,
+              "actionTag": 654761355,
+              "tag": 9,
+              "name": "btn_return",
+              "classname": "Button"
+            },
+            "children": [
+              {
+                "options": {
+                  "$type": "EditorCommon.JsonModel.Component.GUI.ImageViewSurrogate, EditorCommon",
+                  "fileNameData": {
+                    "resourceType": 0,
+                    "path": "research.png",
+                    "plistFile": ""
+                  },
+                  "scale9Width": 50.0,
+                  "scale9Height": 41.0,
+                  "scaleY": 0.8,
+                  "visible": true,
+                  "classType": "ImageView",
+                  "width": 50.0,
+                  "height": 41.0,
+                  "sizePercentX": 0.776699,
+                  "sizePercentY": 2.0,
+                  "actionTag": 776706025,
+                  "tag": 10,
+                  "ignoreSize": true,
+                  "name": "ImageView_3",
+                  "classname": "ImageView"
+                },
+                "children": [],
+                "classname": "ImageView"
+              }
+            ],
+            "classname": "Button"
+          }
+        ],
+        "classname": "ImageView"
+      }
+    ],
+    "classname": "Node"
+  },
+  "action": {
+    "speed": 1.0,
+    "timelines": []
+  }
+}

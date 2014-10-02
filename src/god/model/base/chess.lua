@@ -97,9 +97,7 @@ function Chess:ChangeWaitRound(change_value)
 	local round = self:GetWaitRound()
 	local new_value = round + change_value
 	self:SetWaitRound(new_value)
-	if new_value <= 0 then
-		self:Attack()
-	end
+	return new_value
 end
 
 function Chess:SetPosition(x, y)
@@ -256,16 +254,20 @@ function Chess:Attack()
 				return
 			end
 			local target_chess = opposite_map.obj_pool:GetById(target_id)
-			ViewInterface:WaitChessAttack(self, target_chess, 
-				function()
-					self:AttackEnemy(target_id)
-					if self:GetLife() <= 0 then
-						self_map.obj_pool:Remove(self:GetId())
-						return
+			if target_chess then
+				ViewInterface:WaitChessAttack(self, target_chess, 
+					function()
+						self:AttackEnemy(target_id)
+						if self:GetLife() <= 0 then
+							self_map.obj_pool:Remove(self:GetId())
+							return
+						end
+						return self:Attack()
 					end
-					return self:Attack()
-				end
-			)
+				)
+			else
+				self:Attack()
+			end
 		end
 	)
 end
@@ -273,6 +275,9 @@ end
 function Chess:AttackEnemy(target_id)
 	local opposite_map = self:GetOppositeMap()
 	local target_chess = opposite_map.obj_pool:GetById(target_id)
+	if not target_chess then
+		return
+	end
 	local attack_damage = self:GetLife()
 	local defence_damage = target_chess:GetLife()
 	target_chess:ChangeLife(-attack_damage)

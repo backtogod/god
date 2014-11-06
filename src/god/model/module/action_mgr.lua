@@ -85,6 +85,7 @@ function ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 		end
 	)
 	local chess = map.obj_pool:GetById(id)
+	chess:SetPosition(logic_x, Def.MAP_HEIGHT + 1)
 	chess:MoveTo(logic_x, logic_y)
 end
 

@@ -112,13 +112,18 @@ function Chess:SetPosition(x, y)
 	Event:FireEvent(event_name, self:GetId(), x, y, old_x, old_y)
 end
 
+function Chess:GetPosition()
+	return self.x, self.y
+end
+
 function Chess:MoveTo(logic_x, logic_y)
-	if self.x == x and self.y == y then
+	if self.x == logic_x and self.y == logic_y then
 		return
 	end
 	local map = self:GetMap()
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
-	ViewInterface:WaitMoveComplete(self, x, y, Def.CHESS_MOVE_SPEED,
+	local start_x, start_y = map:Logic2Pixel(self.x, self.y)
+	ViewInterface:WaitMoveComplete(self, start_x, start_y, x, y, Def.CHESS_MOVE_SPEED,
 		function()
 			self:SetPosition(logic_x, logic_y)
 		end
@@ -242,7 +247,8 @@ function Chess:Attack()
 	if not target_x or not target_y then
 		target_x, target_y = opposite_map:Logic2Pixel(self.x, Def.MAP_HEIGHT)
 	end
-	ViewInterface:WaitMoveComplete(self, target_x, target_y, Def.CHESS_BATTLE_MOVE_SPEED,
+	local start_x, start_y = map:Logic2Pixel(self.x, self.y)
+	ViewInterface:WaitMoveComplete(self, start_x, start_y, target_x, target_y, Def.CHESS_BATTLE_MOVE_SPEED,
 		function()
 			if target_id <= 0 then
 				ViewInterface:WaitChessAttack(self, target_chess, 

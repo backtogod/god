@@ -324,12 +324,88 @@ function Scene:GenerateChessSprite(image_name)
 	return sprite
 end
 
+
+function Scene:StartWatch(min_wait_time, call_back)
+	assert(not self.master_wait_helper)
+	self.master_wait_helper = Class:New(WaitHelper, "WatchWaiter")
+	self.master_wait_helper:Init({self.EndWatch, self, call_back})
+	-- self.master_wait_helper:EnableDebug()
+
+	self.master_wait_helper:WaitJob(min_wait_time)
+end
+
+function Scene:EndWatch(call_back)
+	self.master_wait_helper:Uninit()
+	self.master_wait_helper = nil
+	assert(call_back and type(call_back) == "function")
+	call_back()
+end
+
+function Scene:GetMasterWatchWaiter()
+	return self.master_wait_helper
+end
+
+function Scene:NewSlaveWatchWaiter(waiter_name, min_wait_time, max_wait_time, call_back)
+	local master_waiter = self:GetMasterWatchWaiter()
+	assert(master_waiter)
+	assert(not self.slave_wait_helper_list[waiter_name])
+
+	local job_id = master_waiter:WaitJob(max_wait_time)
+	local slave_waite_helper = Class:New(WaitHelper, waiter_name)
+	
+	slave_waite_helper:Init({self.OnSlaveWaiterComplete, self, waiter_name, job_id, call_back})
+	slave_waite_helper:WaitJob(min_wait_time)
+
+	self.slave_wait_helper_list[waiter_name] = slave_waite_helper
+
+	return slave_waite_helper
+end
+
+function Scene:GetSlaveWatchWaiter(waiter_name)
+	return self.slave_wait_helper_list[waiter_name]
+end
+
 function Scene:SetMapChessPosition(map, id, logic_x, logic_y)
 	local chess = self:GetObj("main", map:GetClassName(), id)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
 	chess:setPosition(x, y)
 	chess:setLocalZOrder(visible_size.height - y)
 end
+
+
+function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
+	local waiter = self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
+	print("new battle waiter")
+	waiter:EnableDebug(1)
+	return waiter
+end
+
+function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
+	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
+	local job_id = round_waiter:WaitJob(max_wait_time)
+
+	local ui_frame = self:GetUI()
+	local label = Ui:GetElement(ui_frame, "LABEL", "round_tip")
+	if not label then
+		assert(false)
+		return
+	end
+	label:setVisible(true)
+	label:setString(text_msg)
+	label:setScale(0.1)
+
+	local action_scale_to = cc.ScaleTo:create(0.8, 1)
+	local action_delay = cc.DelayTime:create(1)
+	local action_call_back = cc.CallFunc:create(
+		function()
+			label:setVisible(false)
+			round_waiter:JobComplete(job_id)
+		end
+	)
+	label:stopAllActions()
+	label:runAction(cc.Sequence:create(action_scale_to, action_delay, action_call_back))
+end
+
 
 function Scene:OnTouchBegan(x, y)
 	return TouchInput:OnTouchBegan(x, y)
@@ -372,12 +448,10 @@ function Scene:OnChessAdd(chess, template_id, logic_x, logic_y)
 	local puppet = NewPuppet(chess:GetClassName())
 	self:AddObj("puppet", map:GetClassName(), id, puppet)
 	local chess_sprite = self:GenerateChessSprite(config.image)
-	puppet:AddChildElement("body", chess_sprite, 0, 0, 1, 10)
-
-	self:AddObj("main", map:GetClassName(), id, puppet:GetSprite())
-	self:SetMapChessPosition(map, id, logic_x, Def.MAP_HEIGHT)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
-	return self:MoveChessToPosition(chess, x, y, Def.CHESS_MOVE_SPEED)
+	puppet:AddChildElement("body", chess_sprite, 0, 0, 1, 10)
+	self:AddObj("main", map:GetClassName(), id, puppet:GetSprite())
+	self:SetMapChessPosition(map, id, logic_x, logic_y)
 end
 
 function Scene:OnSelfChessRemove(id)
@@ -428,10 +502,7 @@ end
 function Scene:OnChessSetPosition(chess, logic_x, logic_y)
 	local map = chess:GetMap()
 	local id = chess:GetId()
-	local chess_sprite = self:GetObj("main", map:GetClassName(), id)
-	local x, y = map:Logic2Pixel(logic_x, logic_y)
-	chess_sprite:setPosition(x, y)
-	chess_sprite:setLocalZOrder(visible_size.height - y)
+	return self:SetMapChessPosition(map, id, logic_x, logic_y)
 end
 
 function Scene:OnSelfChessSetDisplayPosition(id, logic_x, logic_y)
@@ -627,7 +698,7 @@ function Scene:OnChessLifeChanged(chess, new_life, old_life)
 	self:_OnLifeChanged(puppet:GetSprite(), new_life - old_life, 0, 0)
 end
 
-function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
+function Scene:MoveChessToPosition(chess, start_x, start_y, x, y, speed, call_back)
 	local chess_id = chess:GetId()
 	local map = chess:GetMap()
 
@@ -647,7 +718,7 @@ function Scene:MoveChessToPosition(chess, x, y, speed, call_back)
 	local function func_time_over(id)
 		call_back()
 	end
-	local start_x, start_y = chess_sprite:getPosition()
+	chess_sprite:setPosition(start_x, start_y)
 	local time = math.abs(y - start_y) / speed
 	if time <= 0 then
 		time = 0.1
@@ -859,46 +930,6 @@ function Scene:OnDropChess(id, logic_x, logic_y, old_x, old_y)
 	ActionMgr:OperateChess(map, id, logic_x, logic_y, old_x, old_y)
 end
 
-function Scene:StartWatch(min_wait_time, call_back)
-	assert(not self.master_wait_helper)
-	self.master_wait_helper = Class:New(WaitHelper, "WatchWaiter")
-	self.master_wait_helper:Init({self.EndWatch, self, call_back})
-	-- self.master_wait_helper:EnableDebug()
-
-	self.master_wait_helper:WaitJob(min_wait_time)
-end
-
-function Scene:EndWatch(call_back)
-	self.master_wait_helper:Uninit()
-	self.master_wait_helper = nil
-	assert(call_back and type(call_back) == "function")
-	call_back()
-end
-
-function Scene:GetMasterWatchWaiter()
-	return self.master_wait_helper
-end
-
-function Scene:NewSlaveWatchWaiter(waiter_name, min_wait_time, max_wait_time, call_back)
-	local master_waiter = self:GetMasterWatchWaiter()
-	assert(master_waiter)
-	assert(not self.slave_wait_helper_list[waiter_name])
-
-	local job_id = master_waiter:WaitJob(max_wait_time)
-	local slave_waite_helper = Class:New(WaitHelper, waiter_name)
-	
-	slave_waite_helper:Init({self.OnSlaveWaiterComplete, self, waiter_name, job_id, call_back})
-	slave_waite_helper:WaitJob(min_wait_time)
-
-	self.slave_wait_helper_list[waiter_name] = slave_waite_helper
-
-	return slave_waite_helper
-end
-
-function Scene:GetSlaveWatchWaiter(waiter_name)
-	return self.slave_wait_helper_list[waiter_name]
-end
-
 function Scene:OnSlaveWaiterComplete(waiter_name, job_id, call_back)
 	local master_waiter = self:GetMasterWatchWaiter()
 	assert(master_waiter)
@@ -954,37 +985,4 @@ function Scene:OnComboChanged(combo_count)
 	)
 	label:stopAllActions()
 	label:runAction(cc.Sequence:create(scale_to, delay, call_back))
-end
-
-function Scene:StartBattle(min_wait_time, max_wait_time, call_back)
-	local waiter = self:NewSlaveWatchWaiter("battle", min_wait_time, max_wait_time, call_back)
-	print("new battle waiter")
-	waiter:EnableDebug(1)
-	return waiter
-end
-
-function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
-	local round_waiter = self:NewSlaveWatchWaiter("round_start", min_wait_time, max_wait_time, call_back)
-	local job_id = round_waiter:WaitJob(max_wait_time)
-
-	local ui_frame = self:GetUI()
-	local label = Ui:GetElement(ui_frame, "LABEL", "round_tip")
-	if not label then
-		assert(false)
-		return
-	end
-	label:setVisible(true)
-	label:setString(text_msg)
-	label:setScale(0.1)
-
-	local action_scale_to = cc.ScaleTo:create(0.8, 1)
-	local action_delay = cc.DelayTime:create(1)
-	local action_call_back = cc.CallFunc:create(
-		function()
-			label:setVisible(false)
-			round_waiter:JobComplete(job_id)
-		end
-	)
-	label:stopAllActions()
-	label:runAction(cc.Sequence:create(action_scale_to, action_delay, action_call_back))
 end

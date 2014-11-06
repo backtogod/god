@@ -81,11 +81,12 @@ function CombineMgr:CheckCombineForWall(map)
 		end
 		self:GetCanCombine(map, id_list, wall_list)
 	end
-	for _, combine_list in ipairs(wall_list) do
-		self:GenerateWall(map, combine_list)
-		result = 1
-	end
-	return result
+	return wall_list
+	-- for _, combine_list in ipairs(wall_list) do
+	-- 	self:GenerateWall(map, combine_list)
+	-- 	result = 1
+	-- end
+	-- return result
 end
 
 function CombineMgr:CheckCombineForArmy(map)
@@ -98,11 +99,12 @@ function CombineMgr:CheckCombineForArmy(map)
 		end
 		self:GetCanCombine(map, id_list, army_list)
 	end
-	for _, combine_list in ipairs(army_list) do
-		self:GenerateArmy(map, combine_list)
-		result = 1
-	end
-	return result
+	return army_list
+	-- for _, combine_list in ipairs(army_list) do
+	-- 	self:GenerateArmy(map, combine_list)
+	-- 	result = 1
+	-- end
+	-- return result
 end
 
 function CombineMgr:CanCombine(chess_a, chess_b)

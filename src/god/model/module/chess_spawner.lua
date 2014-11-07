@@ -56,14 +56,7 @@ function ChessSpawner:SpawnChess(map, id_list)
 				generate_id = generate_list[math.random(1, #generate_list)]
 			end
 			local chess, id = map.obj_pool:Add(Chess, generate_id, logic_x, Def.MAP_HEIGHT)
-			map:OnChessSetPosition(id, logic_x, logic_y, logic_x, Def.MAP_HEIGHT)
-			local x, y = map:Logic2Pixel(logic_x, logic_y)
-			local start_x, start_y = map:Logic2Pixel(chess:GetPosition())
-			ViewInterface:WaitMoveComplete(chess, start_x, start_y, x, y, Def.CHESS_MOVE_SPEED,
-				function()
-					chess:SetPosition(logic_x, logic_y)
-				end
-			)
+			chess:MoveTo(logic_x, logic_y)
 		end
 		last_logic_y = logic_y
 		last_generate_id = generate_id

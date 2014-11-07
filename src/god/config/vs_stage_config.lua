@@ -26,9 +26,9 @@ VSStageConfig.test_stage_data = {
 			template_scene = "VSScene",			
 			self_spec = {
 				{3,2,2,4,5,6,},
-				{1,1,1,2,4,4,},
-				{3,5,3,3,5,6,},
-				{3,2,3,3,5,6,},
+				{1,1,1,5,4,4,},
+				{3,5,3,1,5,6,},
+				{3,2,3,1,5,6,},
 			},
 			self_wave_count = 4,
 			enemy_spec = {
@@ -38,6 +38,22 @@ VSStageConfig.test_stage_data = {
 				{3,2,1,4,5,4,},
 			},
 			enemy_wave_count = 4,
+			init_state = GameStateMachine.STATE_ENEMY_WATCH,
+		},
+	},
+	{
+		case_name = "Cross Combine",
+		stage_name = "test_cross_combine",
+		data = {
+			template_scene = "VSScene",
+			self_spec = {
+				{1,1,1,5,4,4,},
+				{3,1,3,3,5,6,},
+				{3,1,3,3,5,6,},
+			},
+			self_wave_count = 3,
+			enemy_spec = {},
+			enemy_wave_count = 3,
 			init_state = GameStateMachine.STATE_ENEMY_WATCH,
 		},
 	},

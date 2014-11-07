@@ -718,7 +718,11 @@ function Scene:MoveChessToPosition(chess, start_x, start_y, x, y, speed, call_ba
 	local function func_time_over(id)
 		call_back()
 	end
-	chess_sprite:setPosition(start_x, start_y)
+	if start_x and start_y then
+		chess_sprite:setPosition(start_x, start_y)
+	else
+		start_x, start_y = chess_sprite:getPosition()
+	end
 	local time = math.abs(y - start_y) / speed
 	if time <= 0 then
 		time = 0.1

@@ -23,12 +23,35 @@ function CombineMgr:CheckCombine(map)
 	-- map:Debug()
 	local result = 0
 	self:TryMerge(map)
-	if self:CheckCombineForWall(map) == 1 then
+	local wall_list = self:CheckCombineForWall(map)
+	local army_list = self:CheckCombineForArmy(map)
+
+	for _, combine_list in ipairs(wall_list) do
+		self:GenerateWall(map, combine_list)
 		result = 1
 	end
-	if self:CheckCombineForArmy(map) == 1 then
+
+	for _, combine_list in ipairs(army_list) do
+		self:GenerateArmy(map, combine_list)
 		result = 1
 	end
+
+	for _, combine_list in ipairs(wall_list) do
+		for _, check_id in ipairs(combine_list) do
+			if map.obj_pool:GetById(check_id) then
+				map.obj_pool:Remove(check_id)
+			end
+		end
+	end
+
+	for _, combine_list in ipairs(army_list) do
+		for _, check_id in ipairs(combine_list) do
+			if map.obj_pool:GetById(check_id) then
+				map.obj_pool:Remove(check_id)
+			end
+		end
+	end
+
 	return result
 end
 
@@ -72,7 +95,6 @@ function CombineMgr:GetCanCombine(map, id_list, ret_list)
 end
 
 function CombineMgr:CheckCombineForWall(map)
-	local result = 0
 	local wall_list = {}
 	for y = 1, Def.MAP_HEIGHT do
 		local id_list = {}
@@ -81,16 +103,11 @@ function CombineMgr:CheckCombineForWall(map)
 		end
 		self:GetCanCombine(map, id_list, wall_list)
 	end
+	
 	return wall_list
-	-- for _, combine_list in ipairs(wall_list) do
-	-- 	self:GenerateWall(map, combine_list)
-	-- 	result = 1
-	-- end
-	-- return result
 end
 
 function CombineMgr:CheckCombineForArmy(map)
-	local result = 0
 	local army_list = {}
 	for x = 1, Def.MAP_WIDTH do
 		local id_list = {}
@@ -99,12 +116,8 @@ function CombineMgr:CheckCombineForArmy(map)
 		end
 		self:GetCanCombine(map, id_list, army_list)
 	end
+	
 	return army_list
-	-- for _, combine_list in ipairs(army_list) do
-	-- 	self:GenerateArmy(map, combine_list)
-	-- 	result = 1
-	-- end
-	-- return result
 end
 
 function CombineMgr:CanCombine(chess_a, chess_b)
@@ -134,7 +147,10 @@ function CombineMgr:GenerateWall(map, list)
 
 	for _, check_id in ipairs(list) do
 		local chess = map.obj_pool:GetById(check_id)
-		if chess:TransformtToWall() ~= 1 then
+		local template_id = chess:GetTemplateId()
+		local x, y = chess.x, chess.y
+		local new_chess, id = map.obj_pool:Add(Chess, template_id, x, y)
+		if new_chess:TransformtToWall() ~= 1 then
 			assert(false)
 			return
 		end
@@ -148,12 +164,30 @@ function CombineMgr:GenerateArmy(map, list, x)
 		return
 	end
 
+	local x = nil
+	local y = nil
+	local template_id = nil
 	for _, check_id in ipairs(list) do
 		local chess = map.obj_pool:GetById(check_id)
-		if chess:TransformtToArmy() ~= 1 then
-			assert(false)
-			return
+		if not x then
+			x = chess.x
 		end
+		if not y then
+			y = chess.y
+		end
+		if not template_id then
+			template_id = chess:GetTemplateId()
+		end
+		if chess.y > y then
+			y = chess.y
+		end
+		assert(x == chess.x)
+		assert(template_id == chess:GetTemplateId())
+	end
+	local new_chess, id = map.obj_pool:Add(Chess, template_id, x, y)
+	if new_chess:TransformtToArmy() ~= 1 then
+		assert(false)
+		return
 	end
 	Event:FireEvent("COMBINE.ARMY")
 end

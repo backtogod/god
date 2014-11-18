@@ -37,7 +37,7 @@ function TouchInput:OnTouchBegan(x, y)
 	elseif logic_x > Def.MAP_WIDTH then
 		logic_x = Def.MAP_WIDTH
 	end	
-	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess",  logic_x})
+	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess",  logic_x, logic_y})
 	if ret_code and pick_id then
 		self.pick_id = pick_id
 		self.last_logic_x = logic_x

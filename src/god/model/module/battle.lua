@@ -40,12 +40,10 @@ function Battle:BattleStart(call_back)
 
 	local function TryCombat()
 		local army_list = map:GetArmyList()
-		Lib:ShowTB(army_list, 2)
 		for i = 1, height do
 			local is_start_combat = 0
 			if army_list[i] then			
 				for _, chess in pairs(army_list[i]) do
-					print(i," ddd ", chess:GetId())
 					local rest_round = chess:GetWaitRound()
 					if rest_round == 0 then
 						is_start_combat = 1

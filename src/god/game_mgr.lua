@@ -52,7 +52,7 @@ function GameMgr:_Init()
     Debug:AddBlackEvent("CHESS.SET_TEMPLATE")
 
     -- Debug:ChangeMode(Debug.MODE_WHITE_LIST)
-
+    -- Def.MAP_CELL_WIDTH = visible_size.width / Def.MAP_WIDTH
     local action_node = ComponentMgr:GetComponent("ACTION")
     for state, allow_state_list in pairs(Def.ALLOW_STATE_RULE) do
         for _, allow_state in ipairs(allow_state_list) do

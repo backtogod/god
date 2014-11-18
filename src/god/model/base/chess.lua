@@ -146,7 +146,7 @@ function Chess:TransformtToWall()
 		assert(false)
 		return
 	end
-	ViewInterface:WaitChangeStateComplete(self, Def.STATE_ARMY, 
+	ViewInterface:WaitChangeStateComplete(self, Def.STATE_WALL, 
 		function()
 			self.max_life = Def.WALL_MAX_HP
 			self:SetLife(Def.WALL_DEFAULT_HP)

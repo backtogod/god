@@ -109,7 +109,7 @@ function ActionMgr:NextRound()
 	end
 	local text_msg = "轮到你行动了"
 	if GameStateMachine:IsInEnemyAction() == 1 then
-		text_msg = "对方回合"
+		text_msg = "行动结束"
 	end
 	ViewInterface:WaitPlayTipFinish(
 		0.5, 100, text_msg,

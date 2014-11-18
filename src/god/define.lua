@@ -6,7 +6,7 @@
 -- Modify       :
 --=======================================================================
 
-Def.MAP_WIDTH = 6
+Def.MAP_WIDTH = 7
 Def.MAP_HEIGHT = 4
 Def.MAP_CELL_WIDTH = 90
 Def.MAP_CELL_HEIGHT = 90

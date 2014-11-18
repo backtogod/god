@@ -92,8 +92,8 @@ function Scene:_Init()
 	assert(TouchInput:Init() == 1)
 	assert(GameStateMachine:Init(stage_config.init_state) == 1)
 	assert(Player:Init(stage_config.self_max_hp, stage_config.self_hp, stage_config.enemy_max_np, stage_config.enemy_np) == 1)
-	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.self_spec, stage_config.self_wave_count) == 1)
-	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.enemy_spec, stage_config.enemy_wave_count) == 1)
+	assert(SelfMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.self_map_data, stage_config.self_spec, stage_config.self_wave_count) == 1)
+	assert(EnemyMap:Init(Def.MAP_WIDTH, Def.MAP_HEIGHT, stage_config.enemy_map_data, stage_config.enemy_spec, stage_config.enemy_wave_count) == 1)
 	assert(PickHelper:Init(1) == 1)
 	assert(VSRobot:Init() == 1)
 	assert(Battle:Init() == 1)
@@ -141,12 +141,18 @@ function Scene:InitUI()
 	self:InitPlayerHPUI()
 
 	local ui_frame = self:GetUI()
+
+	local layer_gray = cc.LayerColor:create(cc.c4b(0, 0, 0, 200), visible_size.width, visible_size.height)
+	layer_gray:setVisible(false)
+	Ui:AddElement(ui_frame, "MASK", "gray", 0, 0, layer_gray)
+
 	local label_combo = cc.Label:createWithSystemFont("COMBO X", "Arial", 100)
 	label_combo:setVisible(false)
 	Ui:AddElement(ui_frame, "LABEL", "combo", visible_size.width / 2, visible_size.height / 2, label_combo)
 
 	local label_round_tip = cc.Label:createWithSystemFont("ROUND X", "Arial", 100)
 	label_round_tip:setVisible(false)
+	label_round_tip:enableOutline(cc.c4b(0, 0, 100, 255), 5)
 	Ui:AddElement(ui_frame, "LABEL", "round_tip", visible_size.width / 2, visible_size.height / 2, label_round_tip)
 
 	return 1
@@ -174,30 +180,30 @@ end
 function Scene:InitDebugUI()
 	local ui_frame = self:GetUI()
 
-	local label_round = cc.Label:createWithSystemFont("Round X", "Arial", 40)
+	local label_round = cc.Label:createWithSystemFont("Round 1", "Arial", 40)
 	label_round:setTextColor(cc.c4b(100, 200, 255, 255))
 	label_round:setAnchorPoint(cc.p(0, 0.5))
 	-- label_round:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 50, visible_size.height - 50, label_round)
+	Ui:AddElement(ui_frame, "LABEL", "RoundTitle", 10, visible_size.height - 75, label_round)
 
-	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 40)
+	local label_state = cc.Label:createWithSystemFont("UNKNOWN", "Arial", 30)
 	label_state:setTextColor(cc.c4b(100, 200, 255, 255))
 	label_state:setAnchorPoint(cc.p(0, 0.5))
 	-- label_state:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2 - 50 , visible_size.height - 50, label_state)
+	Ui:AddElement(ui_frame, "LABEL", "State", visible_size.width / 2, visible_size.height * 0.5, label_state)
 
-	local label_rest_num_title = cc.Label:createWithSystemFont("可行动次数:", nil, 40)
-	label_rest_num_title:setTextColor(cc.c4b(100, 200, 255, 255))
+	local label_rest_num_title = cc.Label:createWithSystemFont("可行动次数:", nil, 30)
+	label_rest_num_title:setTextColor(cc.c4b(255, 255, 255, 255))
 	label_rest_num_title:setAnchorPoint(cc.p(0, 0.5))
 	-- label_rest_num_title:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RestRoundNumTitle", 50, visible_size.height / 2, label_rest_num_title)
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNumTitle", 10, visible_size.height / 2, label_rest_num_title)
 
 	local rect = label_rest_num_title:getBoundingBox()
-	local label_rest_num = cc.Label:createWithSystemFont("0", "Arial", 40)
+	local label_rest_num = cc.Label:createWithSystemFont("0", "Arial", 70)
 	label_rest_num:setTextColor(cc.c4b(100, 200, 255, 255))
-	label_rest_num:setAnchorPoint(cc.p(0, 0))
-	-- label_rest_num:enableShadow(cc.c4b(0, 0, 0, 255), cc.size(10, 10), 10)
-	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 10, rect.y , label_rest_num)
+	label_rest_num:setAnchorPoint(cc.p(0, 0.5))
+	label_rest_num:enableShadow(cc.c4b(100, 100, 100, 255), cc.size(3, -3))
+	Ui:AddElement(ui_frame, "LABEL", "RestRoundNum", rect.x + rect.width + 20, visible_size.height / 2 , label_rest_num)
 end
 
 function Scene:InitButtonMenu()
@@ -205,7 +211,7 @@ function Scene:InitButtonMenu()
 	local element_list = {
  		{
 	    	{
-				item_name = "Spawn",
+				item_name = "召唤怪物",
 	        	callback_function = function()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
@@ -213,10 +219,8 @@ function Scene:InitButtonMenu()
 	        		CommandCenter:ReceiveCommand({"SpawnChess"})
 	        	end,
 	        },
-	    },
-	    {
 	        {
-				item_name = "End",
+				item_name = "结束本回合",
 	        	callback_function = function()
 	        		if GameStateMachine:CanOperate() ~= 1 then
 	        			return
@@ -229,7 +233,7 @@ function Scene:InitButtonMenu()
 	
 
     local menu_array, width, height = Menu:GenerateByString(element_list, 
-    	{font_size = 40, align_type = "center", interval_x = 50, interval_y = 30}
+    	{font_size = 40, align_type = "center", interval_x = 100, interval_y = 30}
     )
     if height > visible_size.height then
     	self:SetHeight(height)
@@ -240,17 +244,16 @@ function Scene:InitButtonMenu()
     if exist_menu then
     	Ui:RemoveElement(ui_frame, "MENU", "operate")
     end
-    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width - width / 2 - 20, 130, menu_tools)
+    Ui:AddElement(ui_frame, "MENU", "operate", visible_size.width  / 2 , 80, menu_tools)
 end
 
 function Scene:InitPlayerHPUI()
 	local ui_frame = self:GetUI()
 
-	local x, y = SelfMap:Logic2Pixel(0, Def.MAP_HEIGHT)
+	local x, y = SelfMap:Logic2Pixel(1, Def.MAP_HEIGHT)
 	y = y - 80
 	local progress_self_bg = cc.Sprite:create("god/xuetiao-di.png")
 	progress_self_bg:setScale(4)
-	progress_self_bg:setAnchorPoint(cc.p(0, 0.5))
 	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self_bg", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self_bg)
 
 	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-hong.png", 100)	
@@ -263,7 +266,7 @@ function Scene:InitPlayerHPUI()
 	label_self_hp:setTextColor(cc.c4b(100, 200, 255, 255))
 	Ui:AddElement(ui_frame, "LABEL", "self_hp", rect.x + rect.width / 2, rect.y + rect.height / 2, label_self_hp)
 
-	x, y = EnemyMap:Logic2Pixel(0, Def.MAP_HEIGHT)
+	x, y = EnemyMap:Logic2Pixel(1, Def.MAP_HEIGHT)
 	y = y + 80
 
 	local progress_enemy_bg = cc.Sprite:create("god/xuetiao-di.png")
@@ -390,6 +393,7 @@ function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
 		assert(false)
 		return
 	end
+	Ui:SetVisible(ui_frame, "MASK", "gray", true)
 	label:setVisible(true)
 	label:setString(text_msg)
 	label:setScale(0.1)
@@ -398,6 +402,7 @@ function Scene:PlayTip(min_wait_time, max_wait_time, text_msg, call_back)
 	local action_delay = cc.DelayTime:create(1)
 	local action_call_back = cc.CallFunc:create(
 		function()
+			Ui:SetVisible(ui_frame, "MASK", "gray", false)
 			label:setVisible(false)
 			round_waiter:JobComplete(job_id)
 		end
@@ -602,8 +607,7 @@ function Scene:OnChessWaitRoundChanged(chess, round)
 		if not label then
 			label = cc.LabelBMFont:create(tostring(round), "fonts/img_font.fnt")
 			local rect = chess_sprite:getBoundingBox()
-			local scale = chess_sprite:getScaleX()
-			
+			label:setScale(1.5)
 			puppet:AddChildElement("wait_round", label, 0, Def.MAP_CELL_HEIGHT * 0.5, 0, 11)
 		end
 		label:setString(tostring(round))
@@ -648,19 +652,20 @@ function Scene:OnChessLifeUpated(chess, new_life)
 
 		local progress_hp_rect = progress_hp:getBoundingBox()
 		progress_hp:setScaleX((rect.width - 4) / progress_hp_rect.width)
+		progress_hp:setScaleY(1.5)
 
 		local progress_bg = cc.Sprite:create("god/xuetiao-di.png")
 		local progress_bg_rect = progress_bg:getBoundingBox()
 		progress_bg:setScaleX(rect.width / progress_hp_rect.width)
 
-		local x, y = 0, (rect.height + progress_bg_rect.height * 0.5)
+		local x, y = 0, progress_bg_rect.height * 0.5
 		puppet:AddChildElement("hp", progress_hp, x, y, 0, 12)
 		puppet:AddChildElement("hp_bg", progress_bg, x, y, 0, 11)
 
 		local rect = sprite:getBoundingBox()
-		label_hp = cc.Label:createWithSystemFont(tostring(life), nil, 30)
-		-- label_hp:setColor(Def:GetColor("red"))
-		puppet:AddChildElement("hp_num", label_hp, x, rect.height, 0, 12)
+		label_hp = cc.Label:createWithSystemFont(tostring(life), nil, 25)
+		label_hp:enableOutline(cc.c4b(1, 0, 0, 1), 2)
+		puppet:AddChildElement("hp_num", label_hp, x, y, 0, 12)
 	end
 
 	local life = chess:GetLife()
@@ -668,7 +673,7 @@ function Scene:OnChessLifeUpated(chess, new_life)
 	progress_hp:setPercentage((life / max_life) * 100)
 
 	local label_hp = puppet:GetChildElement("hp_num")
-	label_hp:setString(tostring(life))
+	label_hp:setString(string.format("%d/%d", life, max_life))
 end
 
 function Scene:OnSelfChessLifeChanged(id, new_life, old_life)
@@ -714,7 +719,6 @@ function Scene:MoveChessToPosition(chess, start_x, start_y, x, y, speed, call_ba
 		)
 		-- slave_waite_helper:EnableDebug()
 	end
-	chess_sprite:setLocalZOrder(visible_size.height - y)
 	local function func_time_over(id)
 		call_back()
 	end
@@ -736,6 +740,7 @@ function Scene:MoveChessToPosition(chess, start_x, start_y, x, y, speed, call_ba
 	local move_action = cc.MoveTo:create(time, cc.p(x, y))
 	local callback_action = cc.CallFunc:create(
 		function()
+			chess_sprite:setLocalZOrder(visible_size.height - y)
 			if call_back and type(call_back) == "function" then
 				call_back()
 			end
@@ -768,8 +773,14 @@ function Scene:ChangeChessState(chess, state, call_back)
 
 	local job_id = slave_waite_helper:WaitJob(Def.TRANSFORM_TIME + 1, call_back)
 
-	local blink_action = cc.Blink:create(Def.TRANSFORM_TIME, 5)
-	local callback_action = cc.CallFunc:create(
+	local action_list = {}
+	if state == Def.STATE_WALL then
+		action_list[#action_list + 1] = cc.Blink:create(Def.TRANSFORM_TIME, 5)
+	elseif state == Def.STATE_ARMY then
+		action_list[#action_list + 1] = cc.ScaleTo:create(Def.TRANSFORM_TIME * 0.5, 2)
+		action_list[#action_list + 1] = cc.ScaleTo:create(Def.TRANSFORM_TIME * 0.5, 1)
+	end
+	action_list[#action_list + 1] = cc.CallFunc:create(
 		function()
 			if call_back and type(call_back) == "function" then
 				call_back()
@@ -777,8 +788,7 @@ function Scene:ChangeChessState(chess, state, call_back)
 			slave_waite_helper:JobComplete(job_id)
 		end
 	)
-	local delay_action = cc.DelayTime:create(0.2)
-	chess_sprite:runAction(cc.Sequence:create(blink_action, callback_action, delay_action))
+	chess_sprite:runAction(cc.Sequence:create(unpack(action_list)))
 end
 
 function Scene:ChessAttack(chess, target_chess, call_back)

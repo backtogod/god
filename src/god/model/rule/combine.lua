@@ -27,6 +27,25 @@ function CombineMgr:CheckCombine(map)
 	local army_list = self:CheckCombineForArmy(map)
 
 	for _, combine_list in ipairs(wall_list) do
+		for _, tb in ipairs(combine_list) do
+			local check_id = tb.id
+			if map.obj_pool:GetById(check_id) then
+				map.obj_pool:Remove(check_id)
+			end
+		end
+	end
+
+	for _, combine_list in ipairs(army_list) do
+		for _, tb in ipairs(combine_list) do
+			local check_id = tb.id
+			local chess = map.obj_pool:GetById(check_id)
+			if chess then
+				map.obj_pool:Remove(check_id)
+			end
+		end
+	end
+
+	for _, combine_list in ipairs(wall_list) do
 		self:GenerateWall(map, combine_list)
 		result = 1
 	end
@@ -34,22 +53,6 @@ function CombineMgr:CheckCombine(map)
 	for _, combine_list in ipairs(army_list) do
 		self:GenerateArmy(map, combine_list)
 		result = 1
-	end
-
-	for _, combine_list in ipairs(wall_list) do
-		for _, check_id in ipairs(combine_list) do
-			if map.obj_pool:GetById(check_id) then
-				map.obj_pool:Remove(check_id)
-			end
-		end
-	end
-
-	for _, combine_list in ipairs(army_list) do
-		for _, check_id in ipairs(combine_list) do
-			if map.obj_pool:GetById(check_id) then
-				map.obj_pool:Remove(check_id)
-			end
-		end
 	end
 
 	return result
@@ -63,7 +66,7 @@ function CombineMgr:GetCanCombine(map, id_list, ret_list)
 		local check_id = id_list[start_index]
 		local check_chess = map.obj_pool:GetById(check_id)
 		if check_chess then
-			local combine_list = {check_id}
+			local combine_list = {{id = check_id, template_id = check_chess:GetTemplateId(), x = check_chess.x, y = check_chess.y},}
 			end_index = start_index + 1
 			while end_index <= count do
 				local chess_id = id_list[end_index]
@@ -77,7 +80,7 @@ function CombineMgr:GetCanCombine(map, id_list, ret_list)
 					end
 					break
 				end
-				combine_list[#combine_list + 1] = chess_id
+				combine_list[#combine_list + 1] = {id = chess_id, template_id = chess:GetTemplateId(), x = chess.x, y = chess.y}
 				if #combine_list >= 3 then
 					table.insert(ret_list, combine_list)
 					start_index = end_index + 1
@@ -145,10 +148,9 @@ function CombineMgr:GenerateWall(map, list)
 		return
 	end
 
-	for _, check_id in ipairs(list) do
-		local chess = map.obj_pool:GetById(check_id)
-		local template_id = chess:GetTemplateId()
-		local x, y = chess.x, chess.y
+	for _, tb in ipairs(list) do
+		local template_id = tb.template_id
+		local x, y = tb.x, tb.y
 		local new_chess, id = map.obj_pool:Add(Chess, template_id, x, y)
 		if new_chess:TransformtToWall() ~= 1 then
 			assert(false)
@@ -167,22 +169,24 @@ function CombineMgr:GenerateArmy(map, list, x)
 	local x = nil
 	local y = nil
 	local template_id = nil
-	for _, check_id in ipairs(list) do
-		local chess = map.obj_pool:GetById(check_id)
+	local y_list = {}
+	for _, tb in ipairs(list) do
 		if not x then
-			x = chess.x
+			x = tb.x
 		end
-		if not y then
-			y = chess.y
-		end
+		table.insert(y_list, tb.y)
 		if not template_id then
-			template_id = chess:GetTemplateId()
+			template_id = tb.template_id
 		end
-		if chess.y > y then
-			y = chess.y
+		assert(x == tb.x)
+		assert(template_id == tb.template_id)
+	end
+	table.sort(y_list, function(a, b) return a < b end)
+	for _, test_y in ipairs(y_list) do
+		if map:GetCell(x, test_y) == 0 then
+			y = test_y
+			break
 		end
-		assert(x == chess.x)
-		assert(template_id == chess:GetTemplateId())
 	end
 	local new_chess, id = map.obj_pool:Add(Chess, template_id, x, y)
 	if new_chess:TransformtToArmy() ~= 1 then

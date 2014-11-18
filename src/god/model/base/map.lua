@@ -141,6 +141,32 @@ function Map:GetMapOffsetPoint()
 	return offset_x, offset_y
 end
 
+function Map:InitChessByData(width, data)
+	for row, row_data in ipairs(data) do
+		for i = 1, width do
+			local data = row_data[i]
+			if data then
+				local logic_x = i
+				local logic_y = row
+				if type(data) == "number" then
+					local template_id = data
+					local chess, id = self.obj_pool:Add(Chess, template_id, logic_x, logic_y)
+				elseif type(data) == "table" then
+					local template_id, state, life, wait_round = unpack(data)
+					local chess, id = self.obj_pool:Add(Chess, template_id, logic_x, logic_y)
+					chess:TryCall("SetState", state)
+					if state == Def.STATE_WALL then
+						chess.max_life = Def.WALL_MAX_HP
+					elseif state == Def.STATE_ARMY then
+						chess:SetWaitRound(wait_round)
+					end
+					chess:SetLife(life)
+				end
+			end
+		end
+	end
+end
+
 function Map:InitChess(max_wave, spec_list)
 	if not spec_list then
 		spec_list = {}
@@ -197,11 +223,16 @@ function SelfMap:_Uninit()
 	return 1
 end
 
-function SelfMap:_Init(width, height, spec_list, wave_count)
+function SelfMap:_Init(width, height, spec_data, spec_list, wave_count)
 	ChessPool:Init("CHESS")
 	self.obj_pool = ChessPool
 
-	self:InitChess(wave_count, spec_list)
+	print(width, height, spec_data, spec_list, wave_count)
+	if spec_data then
+		self:InitChessByData(width, spec_data)
+	else
+		self:InitChess(wave_count, spec_list)
+	end
 
 	return 1
 end
@@ -234,11 +265,16 @@ function EnemyMap:_Uninit()
 	return 1
 end
 
-function EnemyMap:_Init(width, height, spec_list, wave_count)
+function EnemyMap:_Init(width, height, spec_data, spec_list, wave_count)
 	EnemyChessPool:Init("ENEMY_CHESS")
 	self.obj_pool = EnemyChessPool
 
-	self:InitChess(wave_count, spec_list)
+	print(width, height, spec_data, spec_list, wave_count)
+	if spec_data then
+		self:InitChessByData(width, spec_data)
+	else
+		self:InitChess(wave_count, spec_list)
+	end
 
 	return 1
 end

@@ -46,8 +46,11 @@ function CommandCenter:ExecuteCommand(state, command)
 	return exec_fun(self, map, unpack(command, 2))
 end
 
-function CommandCenter:_PickChess(map, logic_x)
+function CommandCenter:_PickChess(map, logic_x, logic_y)
 	local chess_id, pick_y = PickRule:GetCanPick(map, logic_x)
+	if logic_y and pick_y > logic_y then
+		return
+	end
 	if chess_id then
 		local logic_chess = map.obj_pool:GetById(chess_id)
 		PickHelper:Pick(chess_id, logic_x, pick_y)

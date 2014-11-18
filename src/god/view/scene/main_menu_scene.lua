@@ -15,13 +15,19 @@ function Scene:MainSample()
 	local ui_frame = self:GetUI()
 	local element_list = {
 		{
-	    	{
-				item_name = "Quick Play",
-	        	callback_function = function()
-	        		SceneMgr:LoadScene("VSScene", "quick_play")
-	        	end,
-	        },
-	    },
+			{
+				item_name = "移动模式",
+		    	callback_function = function()
+		    		SceneMgr:LoadScene("VSScene", "move_mode")
+		    	end,
+		    },
+		    {
+				item_name = "放置模式",
+		    	callback_function = function()
+		    		SceneMgr:LoadScene("VSScene", "put_mode")
+		    	end,
+		    },
+		},
  		{
 	    	{
 				item_name = "Test Cases",

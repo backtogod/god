@@ -10,13 +10,20 @@ if not VSStageConfig then
 	VSStageConfig = {}
 end
 
-VSStageConfig.data = {
-	["quick_play"] = {
+VSStageConfig.stage_data = {
+	["move_mode"] = {
+		template_scene = "VSScene",
 		self_wave_count = 3,
 		enemy_wave_count = 3,
 		init_state = GameStateMachine.STATE_ENEMY_WATCH,
 	},
-	
+
+	["put_mode"] = {
+		template_scene = "BossScene",
+		self_wave_count = 0,
+		enemy_wave_count = 0,
+		init_state = GameStateMachine.STATE_ENEMY_WATCH,
+	},
 }
 VSStageConfig.test_stage_data = {
 	{
@@ -98,11 +105,25 @@ VSStageConfig.test_stage_data = {
 			enemy_wave_count = 2,
 			init_state = GameStateMachine.STATE_ENEMY_WATCH,
 		},
-	},	
+	},
+	{
+		case_name = "Preset Map Data",
+		stage_name = "test_map_data",
+		data = {
+			template_scene = "VSScene",			
+			self_map_data = {
+				{{5, Def.STATE_ARMY, 6, 4,}, nil, {1, Def.STATE_WALL, 10}, 2},
+			},
+			enemy_map_data = {
+				{{1, Def.STATE_WALL, 10,}, {1, Def.STATE_WALL, 10}, {1, Def.STATE_WALL, 10},},
+			},
+			init_state = GameStateMachine.STATE_ENEMY_WATCH,
+		},
+	},
 }
 
 for k, v in pairs(VSStageConfig.test_stage_data) do
-	VSStageConfig.data[v.stage_name] = v.data
+	VSStageConfig.stage_data[v.stage_name] = v.data
 end
 
 VSStageConfig.bugs_data = {
@@ -152,13 +173,13 @@ VSStageConfig.bugs_data = {
 }
 
 for k, v in pairs(VSStageConfig.bugs_data) do
-	VSStageConfig.data[v.stage_name] = v.data
+	VSStageConfig.stage_data[v.stage_name] = v.data
 end
 
 function VSStageConfig:GetConfig(name)
-	if not self.data[name] then
+	if not self.stage_data[name] then
 		assert(false, "No Stage[%s] config", tostring(name))
 		return
 	end
-	return self.data[name]
+	return self.stage_data[name]
 end

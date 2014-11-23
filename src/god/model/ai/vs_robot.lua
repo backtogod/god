@@ -277,7 +277,7 @@ function VSRobot:FindCanCombieWall(map)
 					if center_top_y and center_top_y == (y - 1) then
 						local find_x, find_id = self:FindChessByTemplate(map, cur_id, 1, {[cur_x + 1] = 1, [cur_x] = 1, [next_x] = 1})
 						if find_x and find_id then
-							return find_x, cur_x - 1
+							return find_x, next_x - 1
 						end
 					end
 				end

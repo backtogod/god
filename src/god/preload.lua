@@ -1,36 +1,37 @@
 --Sample
-AddProjectScript("define.lua")
+AddProjectScript("define")
 
 --Load Model Script
-AddProjectScript("model/base/map.lua")
-AddProjectScript("model/base/chess.lua")
-AddProjectScript("model/base/player.lua")
+AddProjectScript("model/base/map")
+AddProjectScript("model/base/chess")
+AddProjectScript("model/base/player")
 
-AddProjectScript("model/rule/combine.lua")
-AddProjectScript("model/rule/pick_rule.lua")
+AddProjectScript("model/rule/combine")
+AddProjectScript("model/rule/pick_rule")
 
-AddProjectScript("model/module/game_state_machine.lua")
-AddProjectScript("model/module/action_mgr.lua")
-AddProjectScript("model/module/chess_spawner.lua")
-AddProjectScript("model/module/mover.lua")
-AddProjectScript("model/module/command_center.lua")
-AddProjectScript("model/module/battle.lua")
+AddProjectScript("model/module/game_state_machine")
+AddProjectScript("model/module/action_mgr")
+AddProjectScript("model/module/chess_spawner")
+AddProjectScript("model/module/mover")
+AddProjectScript("model/module/command_center")
+AddProjectScript("model/module/battle")
 
-AddProjectScript("model/ai/boss_robot.lua")
-AddProjectScript("model/ai/vs_robot.lua")
+AddProjectScript("model/ai/boss_robot")
+AddProjectScript("model/ai/vs_robot")
 
 --Load Controller Script
-AddProjectScript("controller/touch_input.lua")
+AddProjectScript("controller/touch_input")
 
 --Load View Script
-AddProjectScript("view/view_interface.lua")
-AddProjectScript("view/scene/main_menu_scene.lua")
-AddProjectScript("view/scene/vs_scene.lua")
-AddProjectScript("view/scene/boss_scene.lua")
+AddProjectScript("view/view_interface")
+AddProjectScript("view/scene/main_menu_scene")
+AddProjectScript("view/scene/vs_scene")
+AddProjectScript("view/scene/boss_scene")
+AddProjectScript("view/scene/character_info")
 
 --Load Game Config
-AddProjectScript("config/chess_config.lua")
-AddProjectScript("config/vs_stage_config.lua")
+AddProjectScript("config/chess_config")
+AddProjectScript("config/vs_stage_config")
 
 --$(SRCROOT)/../../../../external/lua/luajit/prebuilt/ios
 

@@ -21,10 +21,20 @@ function Scene:MainSample()
 		    		SceneMgr:LoadScene("VSScene", "move_mode")
 		    	end,
 		    },
-		    {
+		},
+		{
+			{
 				item_name = "放置模式",
 		    	callback_function = function()
 		    		SceneMgr:LoadScene("VSScene", "put_mode")
+		    	end,
+		    },
+		},
+		{
+			{
+				item_name = "查看怪物属性",
+		    	callback_function = function()
+		    		SceneMgr:LoadScene("CharacterInfo", "view")
 		    	end,
 		    },
 		},

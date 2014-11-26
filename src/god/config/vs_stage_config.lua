@@ -25,6 +25,32 @@ VSStageConfig.stage_data = {
 		init_state = GameStateMachine.STATE_ENEMY_WATCH,
 	},
 }
+
+VSStageConfig.stage_list = {
+	{
+		case_name = "1-1",
+		stage_name = "1-1",
+		data = {
+			template_scene = "VSScene",			
+			self_map_data = {
+				{2,1,1,2,2,1,2,},
+				{3,2,1,3,3,2,1,},
+				{nil, nil, nil, 1, nil, nil},
+			},
+			enemy_map_data = {
+				{1,2,1,3,3,2,3,},
+				{2,1,2,3,nil,3,1,},
+				{3,2,2,nil,nil,2,1,},
+			},
+			init_state = GameStateMachine.STATE_ENEMY_WATCH,
+		},
+	},
+}
+
+for k, v in pairs(VSStageConfig.stage_list) do
+	VSStageConfig.stage_data[v.stage_name] = v.data
+end
+
 VSStageConfig.test_stage_data = {
 	{
 		case_name = "Base Combine",

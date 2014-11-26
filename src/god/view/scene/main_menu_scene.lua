@@ -16,6 +16,15 @@ function Scene:MainSample()
 	local element_list = {
 		{
 			{
+				item_name = "关卡模式",
+		    	callback_function = function()
+		    		local scene = SceneMgr:LoadScene("SceneList", "stage_list")
+		    		scene:ShowSceneList(VSStageConfig.stage_list)
+		    	end,
+		    },
+		},
+		{
+			{
 				item_name = "移动模式",
 		    	callback_function = function()
 		    		SceneMgr:LoadScene("VSScene", "move_mode")

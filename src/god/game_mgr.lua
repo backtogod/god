@@ -41,7 +41,7 @@ end
 function GameMgr:_Init()
 
     Log:Init(Log.LOG_DEBUG, Log.LOG_INFO)
-   
+
     -- Debug:AddWhiteEvent("PICKHELPER.PICK", Log.LOG_INFO)
     -- Debug:AddWhiteEvent("PICKHELPER.CANCEL_PICK", Log.LOG_INFO)
     -- Debug:AddWhiteEvent("PICKHELPER.DROP", Log.LOG_INFO)
@@ -59,7 +59,7 @@ function GameMgr:_Init()
             action_node:AddAllowRule(state, allow_state)
         end
     end
-	SceneMgr:FirstLoadScene("MainMenu")
+	SceneMgr:LoadScene("MainMenu")
 	return 1
 end
 

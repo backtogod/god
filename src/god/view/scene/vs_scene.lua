@@ -7,19 +7,6 @@
 --=======================================================================
 
 local Scene = SceneMgr:GetClass("VSScene", 1)
-Scene.property = {
-	can_touch = 1,
-	-- can_drag = 1,
-}
-
--- Scene.cocos_ui = {
--- 	["ui/god_ui/god_ui.json"] = {
--- 		name = "GodUI",
--- 		button = {
--- 			Spawn = "btn_spawn", End = "btn_end", Return = "btn_return",
--- 		},
--- 	},
--- }
 
 Scene:DeclareListenEvent("CHESS.ADD", "OnSelfChessAdd")
 Scene:DeclareListenEvent("CHESS.REMOVE", "OnSelfChessRemove")
@@ -52,8 +39,12 @@ Scene:DeclareListenEvent("GAME.COMBO_CHANGED", "OnComboChanged")
 Scene:DeclareListenEvent("PLAYER.SET_SELF_HP", "OnSetSelfPlayerHP")
 Scene:DeclareListenEvent("PLAYER.SET_ENEMY_HP", "OnSetEnemyPlayerHP")
 
+function Scene:_Preload()
+	self:EnableTouch(1)
+end
+
 function Scene:_Uninit( ... )
-	
+
 	Battle:Uninit()
 	VSRobot:Uninit()
 	EnemyMap:Uninit()
@@ -112,9 +103,9 @@ function Scene:InitUI()
 	local highlight_green = cc.DrawNode:create()
 	local height = Def.MAP_OFFSET_Y + Def.MAP_CELL_HEIGHT * Def.MAP_HEIGHT
 	highlight_green:drawPolygon(
-		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height), 
+		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height),
 		cc.p(Def.MAP_CELL_WIDTH * 0.5, height), cc.p(Def.MAP_CELL_WIDTH * 0.5, -height),},
-		4, 
+		4,
 		cc.c4b(0, 1, 0, 0.2),
 		1,
 		cc.c4b(0, 0, 0, 0)
@@ -125,9 +116,9 @@ function Scene:InitUI()
 	local highlight_red = cc.DrawNode:create()
 	local height = Def.MAP_OFFSET_Y + Def.MAP_CELL_HEIGHT * Def.MAP_HEIGHT
 	highlight_red:drawPolygon(
-		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height), 
+		{cc.p(-Def.MAP_CELL_WIDTH * 0.5, -height), cc.p(-Def.MAP_CELL_WIDTH * 0.5, height),
 		cc.p(Def.MAP_CELL_WIDTH * 0.5, height), cc.p(Def.MAP_CELL_WIDTH * 0.5, -height),},
-		4, 
+		4,
 		cc.c4b(1, 0, 0, 0.2),
 		1,
 		cc.c4b(0, 0, 0, 0)
@@ -135,8 +126,8 @@ function Scene:InitUI()
 	highlight_red:setVisible(false)
 	self:AddObj("main", "draw", "highlight_red", highlight_red)
 
-	self:InitDebugUI()	
-	self:DrawGrip()	
+	self:InitDebugUI()
+	self:DrawGrip()
 	self:InitButtonMenu()
 	self:InitPlayerHPUI()
 
@@ -230,9 +221,9 @@ function Scene:InitButtonMenu()
 	        },
 	    },
 	}
-	
 
-    local menu_array, width, height = Menu:GenerateByString(element_list, 
+
+    local menu_array, width, height = Menu:GenerateByString(element_list,
     	{font_size = 40, align_type = "center", interval_x = 100, interval_y = 30}
     )
     if height > visible_size.height then
@@ -256,7 +247,7 @@ function Scene:InitPlayerHPUI()
 	progress_self_bg:setScale(4)
 	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self_bg", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self_bg)
 
-	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-hong.png", 100)	
+	local progress_self = ProgressBar:GenerateByFile("god/xuetiao-hong.png", 100)
 	progress_self:setScale(4)
 	progress_self:setAnchorPoint(cc.p(0, 0.5))
 	Ui:AddElement(ui_frame, "PROGRESS_BAR", "self", x + 22, y + Def.MAP_CELL_HEIGHT * 0.5, progress_self)
@@ -355,7 +346,7 @@ function Scene:NewSlaveWatchWaiter(waiter_name, min_wait_time, max_wait_time, ca
 
 	local job_id = master_waiter:WaitJob(max_wait_time)
 	local slave_waite_helper = Class:New(WaitHelper, waiter_name)
-	
+
 	slave_waite_helper:Init({self.OnSlaveWaiterComplete, self, waiter_name, job_id, call_back})
 	slave_waite_helper:WaitJob(min_wait_time)
 
@@ -451,6 +442,8 @@ function Scene:OnChessAdd(chess, template_id, logic_x, logic_y)
 	local map = chess:GetMap()
 	local id = chess:GetId()
 	local puppet = NewPuppet(chess:GetClassName())
+	local sprite = cc.Sprite:create()
+	puppet:SetSprite(sprite)
 	self:AddObj("puppet", map:GetClassName(), id, puppet)
 	local chess_sprite = self:GenerateChessSprite(config.image)
 	local x, y = map:Logic2Pixel(logic_x, logic_y)
@@ -711,7 +704,7 @@ function Scene:MoveChessToPosition(chess, start_x, start_y, x, y, speed, call_ba
 	assert(self.master_wait_helper)
 	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
 	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100,
 			function()
 				CombineMgr:CheckCombine(SelfMap)
 				CombineMgr:CheckCombine(EnemyMap)
@@ -762,7 +755,7 @@ function Scene:ChangeChessState(chess, state, call_back)
 	assert(self.master_wait_helper)
 	local slave_waite_helper = self:GetSlaveWatchWaiter("transform")
 	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("transform", 0.1, 100, 
+		slave_waite_helper = self:NewSlaveWatchWaiter("transform", 0.1, 100,
 			function()
 				Mover:MoveWallArmy(SelfMap)
 				Mover:MoveWallArmy(EnemyMap)
@@ -799,7 +792,7 @@ function Scene:ChessAttack(chess, target_chess, call_back)
 	assert(self.master_wait_helper)
 	local slave_waite_helper = self:GetSlaveWatchWaiter("move")
 	if not slave_waite_helper then
-		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100, 
+		slave_waite_helper = self:NewSlaveWatchWaiter("move", 0.1, 100,
 			function()
 				CombineMgr:CheckCombine(SelfMap)
 				CombineMgr:CheckCombine(EnemyMap)

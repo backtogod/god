@@ -36,7 +36,7 @@ function TouchInput:OnTouchBegan(x, y)
 		logic_x = 1
 	elseif logic_x > Def.MAP_WIDTH then
 		logic_x = Def.MAP_WIDTH
-	end	
+	end
 	local ret_code, pick_id = CommandCenter:ReceiveCommand({"PickChess",  logic_x, logic_y})
 	if ret_code and pick_id then
 		self.pick_id = pick_id
@@ -56,7 +56,7 @@ function TouchInput:OnTouchMoved(x, y)
 	local id = self.pick_id
 	if not id then
 		return
-	end	
+	end
 
 	local map = GameStateMachine:GetActiveMap()
 	local logic_x, logic_y = map:Pixel2Logic(x, y)
@@ -101,7 +101,7 @@ function TouchInput:OnTouchEnded(x, y, is_move)
 		self.pick_id = nil
 		self.last_logic_x = nil
 		self.pick_logic_x = nil
-	end	
+	end
 	if is_move == 1 then
 		self.last_touch_end_frame = nil
 	else
